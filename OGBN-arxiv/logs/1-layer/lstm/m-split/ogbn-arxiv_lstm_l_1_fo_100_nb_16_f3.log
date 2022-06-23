@@ -1,0 +1,94 @@
+[03:29:40] /opt/dgl/src/graph/transform/metis_partition_hetero.cc:78: Partition a graph with 90941 nodes and 42066532 edges into 16 parts and get 11157713 edge cuts
+Using backend: pytorch
+main start at this time 1652844551.0167441
+-----------------------------------------before load data 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+ogbn-arxiv
+# Nodes: 169343
+# Edges: 2315598
+# Train: 90941
+# Val: 29799
+# Test: 48603
+# Classes: 40
+
+----------------------------------------start of run function 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+in feats:  128
+----------------------------------------before model to device 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+----------------------------------------after model to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.000530242919921875  GigaBytes
+Max Memory Allocated: 0.000530242919921875  GigaBytes
+
+----------------------------------------before generate dataloader block 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.000530242919921875  GigaBytes
+Max Memory Allocated: 0.000530242919921875  GigaBytes
+
+The real block id is  0
+get_global_graph_edges_ids_block function  spend 0.024135589599609375
+global_2_local spend time (sec) 0.03473973274230957
+----------------------------  graph partition start---------------------
+g = dgl.graph((u,v))  spent  0.006101846694946289
+A = g.adjacency_matrix() spent  0.013479232788085938
+auxiliary_graph
+Graph(num_nodes=160279, num_edges=42157473,
+      ndata_schemes={}
+      edata_schemes={'w': Scheme(shape=(), dtype=torch.float32)})
+get remove nodes spent  0.0890505313873291
+remove nodes length
+69338
+auxiliary_graph.remove_nodes spent  2.1201908588409424
+after remove non output nodes the auxiliary_graph
+Graph(num_nodes=90941, num_edges=42157473,
+      ndata_schemes={}
+      edata_schemes={'w': Scheme(shape=(), dtype=torch.float32)})
+auxiliary_graph_no_diag generation spent  1.9222676753997803
+
+the counter of shared neighbor distribution
+Counter({1.0: 30990948, 2.0: 7118226, 3.0: 2266068, 4.0: 839394, 5.0: 364532, 6.0: 179882, 7.0: 98890, 8.0: 60142, 9.0: 38278, 10.0: 26184, 11.0: 17988, 12.0: 13200, 13.0: 9746, 14.0: 7754, 15.0: 6366, 16.0: 4996, 17.0: 3866, 18.0: 3080, 19.0: 2490, 20.0: 2168, 21.0: 1844, 22.0: 1636, 23.0: 1226, 24.0: 1078, 25.0: 922, 26.0: 726, 27.0: 620, 28.0: 554, 29.0: 538, 30.0: 420, 31.0: 380, 32.0: 368, 33.0: 294, 34.0: 236, 35.0: 212, 36.0: 170, 37.0: 158, 38.0: 156, 39.0: 110, 40.0: 98, 41.0: 84, 42.0: 78, 44.0: 60, 43.0: 60, 45.0: 52, 46.0: 38, 47.0: 32, 48.0: 30, 50.0: 22, 51.0: 20, 49.0: 18, 53.0: 18, 52.0: 12, 59.0: 12, 55.0: 10, 54.0: 10, 56.0: 6, 67.0: 4, 58.0: 4, 64.0: 4, 71.0: 2, 72.0: 2, 57.0: 2, 92.0: 2, 76.0: 2, 68.0: 2, 61.0: 2})
+42066532
+--------------------------------------- new test ---------------------
+--------------------------------------- new test ---------------------
+
+before step function auxiliary_graph_no_diag.edata[w]
+
+tensor([       0,        1,        2,  ..., 42066529, 42066530, 42066531])
+drop no edges
+
+after step function v.2.0 all zero auxiliary_graph_no_diag.edata[w]
+the counter of shared neigbor distribution
+Counter({1.0: 30990948, 2.0: 7118226, 3.0: 2266068, 4.0: 839394, 5.0: 364532, 6.0: 179882, 7.0: 98890, 8.0: 60142, 9.0: 38278, 10.0: 26184, 11.0: 17988, 12.0: 13200, 13.0: 9746, 14.0: 7754, 15.0: 6366, 16.0: 4996, 17.0: 3866, 18.0: 3080, 19.0: 2490, 20.0: 2168, 21.0: 1844, 22.0: 1636, 23.0: 1226, 24.0: 1078, 25.0: 922, 26.0: 726, 27.0: 620, 28.0: 554, 29.0: 538, 30.0: 420, 31.0: 380, 32.0: 368, 33.0: 294, 34.0: 236, 35.0: 212, 36.0: 170, 37.0: 158, 38.0: 156, 39.0: 110, 40.0: 98, 41.0: 84, 42.0: 78, 44.0: 60, 43.0: 60, 45.0: 52, 46.0: 38, 47.0: 32, 48.0: 30, 50.0: 22, 51.0: 20, 49.0: 18, 53.0: 18, 52.0: 12, 59.0: 12, 55.0: 10, 54.0: 10, 56.0: 6, 67.0: 4, 58.0: 4, 64.0: 4, 71.0: 2, 72.0: 2, 57.0: 2, 92.0: 2, 76.0: 2, 68.0: 2, 61.0: 2})
+Convert a graph into a bidirected graph: 1.999 seconds
+Traceback (most recent call last):
+  File "full_and_pseudo_mini_batch_arxiv_sage.py", line 521, in <module>
+    main()
+  File "full_and_pseudo_mini_batch_arxiv_sage.py", line 517, in main
+    best_test = run(args, device, data)
+  File "full_and_pseudo_mini_batch_arxiv_sage.py", line 206, in run
+    block_dataloader, weights_list, time_collection = generate_dataloader_block(g, full_batch_dataloader, args)
+  File "../block_dataloader.py", line 426, in generate_dataloader_block
+    return generate_dataloader_gp_block(raw_graph, full_block_dataloader, args)
+  File "../block_dataloader.py", line 601, in generate_dataloader_gp_block
+    batched_output_nid_list,weights_list,batch_list_generation_time, p_len_list=my_graph_partitioner.init_graph_partition()
+  File "../graph_partitioner_new.py", line 715, in init_graph_partition
+    self.graph_partition()
+  File "../graph_partitioner_new.py", line 647, in graph_partition
+    self.simple_gen_K_batches_seeds_list()
+  File "../graph_partitioner_new.py", line 457, in simple_gen_K_batches_seeds_list
+    partition = dgl.metis_partition(g=auxiliary_graph_no_diag,k=self.args.num_batch)
+  File "/home/cc/.local/lib/python3.6/site-packages/dgl/partition.py", line 380, in metis_partition
+    node_part = metis_partition_assignment(g, k, balance_ntypes, balance_edges, mode)
+  File "/home/cc/.local/lib/python3.6/site-packages/dgl/partition.py", line 319, in metis_partition_assignment
+    node_part = _CAPI_DGLMetisPartition_Hetero(sym_g._graph, k, vwgt, mode)
+KeyboardInterrupt
