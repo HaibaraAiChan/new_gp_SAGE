@@ -380,26 +380,25 @@ def main():
 	# argparser.add_argument('--selection-method', type=str, default='random')
 	
 	argparser.add_argument('--selection-method', type=str, default='REG')
-	# argparser.add_argument('--selection-method-sub', type=str, default='f3')
+	argparser.add_argument('--num-batch', type=int, default=9)
+
 	argparser.add_argument('--re-partition-method', type=str, default='REG')
 	# argparser.add_argument('--re-partition-method', type=str, default='random')
-	argparser.add_argument('--num-re-partition', type=int, default=1)
+	argparser.add_argument('--num-re-partition', type=int, default=0)
 
-	argparser.add_argument('--balanced_init_ratio', type=float, default=0.2)
+	# argparser.add_argument('--balanced_init_ratio', type=float, default=0.2)
 	argparser.add_argument('--num-runs', type=int, default=1)
 	argparser.add_argument('--num-epochs', type=int, default=1)
 
 	argparser.add_argument('--num-hidden', type=int, default=256)
 
-	argparser.add_argument('--num-layers', type=int, default=1)
-	argparser.add_argument('--fan-out', type=str, default='10')
-	argparser.add_argument('--num-batch', type=int, default=2)
+	argparser.add_argument('--num-layers', type=int, default=2)
+	argparser.add_argument('--fan-out', type=str, default='10,25')
+	
 	
 
-	argparser.add_argument('--log-indent', type=float, default=1)
+	argparser.add_argument('--log-indent', type=float, default=0)
 #--------------------------------------------------------------------------------------
-	# argparser.add_argument('--target-redun', type=float, default=1.9)
-	# argparser.add_argument('--alpha', type=float, default=1)
 	
 
 	argparser.add_argument('--lr', type=float, default=1e-2)
@@ -411,10 +410,7 @@ def main():
 
 	argparser.add_argument('--num-workers', type=int, default=4,
 		help="Number of sampling processes. Use 0 for no extra process.")
-	# argparser.add_argument("--eval-batch-size", type=int, default=100000,
-	# 					help="evaluation batch size")
-	# argparser.add_argument("--R", type=int, default=5,
-	# 					help="number of hops")
+	
 
 	argparser.add_argument('--log-every', type=int, default=5)
 	argparser.add_argument('--eval-every', type=int, default=5)

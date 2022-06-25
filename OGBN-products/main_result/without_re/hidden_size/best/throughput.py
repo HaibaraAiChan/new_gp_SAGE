@@ -40,7 +40,7 @@ def to_df(filename, loss_list, test_acc_list):
 	dac.to_csv(filename + '_acc_.dat',  sep='\t')
 
 def get_num_batch(filename):
-	num_batch =filename.split('-')[2]
+	num_batch =filename.split('-')[9]
 	return num_batch
 
 def computation_eff(infile):
@@ -55,45 +55,26 @@ def computation_eff(infile):
 			pure_train_times.append(float(line.split(' ')[-1]))	
 	
 	if sum(pure_train_times)==0:
-			return 0
+    		return 0
 	real_pure_train_eff = sum(compute_num_nid)/sum(pure_train_times)
 	pure_train_t = mean(pure_train_times)
 	
 	return real_pure_train_eff, pure_train_t
-
-def Memory_usage(infile):
-	f = open(infile,'r')
-	max_mem = []
-	
-	for line in f:
-		line = line.strip()
-		if line.startswith("Max Memory Allocated:"):
-			if float(line.split(' ')[3]):
-				max_mem.append(float(line.split(' ')[3]))
-
-	return max_mem[-1]
 		
 
 if __name__=='__main__':
 	res={}
 	train_time={}
-	mem={}
 	for filename in os.listdir("./"):
 		if filename.endswith(".log"):
 			num_batch = int(get_num_batch(filename))
 			eff, t = computation_eff(filename)
 			res[num_batch]=eff
 			train_time[num_batch]=t
-			mem_tmp = Memory_usage(filename)
-			mem[num_batch]=mem_tmp
 	print('computation eff')
 	print(dict(sorted(res.items())))
 	print('time')
 	print(dict(sorted(train_time.items())))
-	print()
-	print('cuda max mem')
-	print(dict(sorted(mem.items())))
-	print()
 	# df=pd.DataFrame(res).transpose()
 	# df_res.index.name
 	# # df.columns=['num of batch','total nodes for computation/pure train time']

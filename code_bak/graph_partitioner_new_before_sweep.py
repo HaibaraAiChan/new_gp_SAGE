@@ -19,9 +19,9 @@ from math import ceil
 # sys.path.insert(0,'..')
 # from draw_graph import draw_dataloader_blocks_pyvis_total, gen_pyvis_graph_local
 
-class Graph_Partitioner:  # ----------------------*** split the output layer block ***---------------------
+class Graph_Partitioner:
 	def __init__(self, layer_block, args):
-		# self.balanced_init_ratio=args.balanced_init_ratio
+		self.balanced_init_ratio=args.balanced_init_ratio
 		self.dataset=args.dataset
 		self.layer_block=layer_block # local graph with global nodes indices
 		self.local=False
@@ -67,24 +67,27 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		self.batch_size=get_mini_batch_size(full_len,self.num_batch)
 		
 		indices=[]
-		if 'range' in self.selection_method: #'range_init_graph_partition' 
+		if self.selection_method == 'range_init_graph_partition' :
 			t=time.time()
 			indices = [i for i in range(full_len)]
 			batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
 			print('range_init for graph_partition spend: ', time.time()-t)
-		elif 'random' in self.selection_method : #'random_init_graph_partition' 
+		elif self.selection_method == 'random_init_graph_partition' :
 			t=time.time()
 			indices = random_shuffle(full_len)
 			batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
 			print('random_init for graph_partition spend: ', time.time()-t)
-		elif 'balance' in self.selection_method: #'balanced_init_graph_partition' 
+		elif self.selection_method == 'balanced_init_graph_partition' :
 			t=time.time()
 			batches_nid_list, weights_list=self.balanced_init()
 			print('balanced_init for graph_partition spend: ', time.time()-t)
-		else:
-			print('\t\t\t error in seletion method !!!')
+
 			
+		else:# selection_method == 'shared_neighbor_graph_partition':
+			indices = torch.tensor(range(full_len)) #----------------------------TO DO
 		
+		# batches_nid_list, weights_list=gen_batch_output_list(self.output_nids,indices,self.batch_size)
+
 		self.local_batched_seeds_list=batches_nid_list
 		self.weights_list=weights_list
 
@@ -110,43 +113,96 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		src= list(set(in_ids+seeds))
 		return src
 
+	def gen_K_batches_seeds_list(self):
+		t1=time.time()
+		u, v =self.layer_block.edges()[0], self.layer_block.edges()[1] # local edges
+		g = dgl.graph((u,v))
+		print('g = dgl.graph((u,v))  spent ', time.time()-t1 )
+		
+		t13 = time.time()
+		A = g.adjacency_matrix()
+		print('A = g.adjacency_matrix() spent ', time.time()-t13 )
+		# t14 = time.time()
+		AT= torch.transpose(A, 0, 1)
+		# print(A)
+		# print(AT)
+		m_at = AT._indices().tolist()
+		m_a  = A._indices().tolist()
+		length = len(m_a[0])
+		# print(m_at)
+		# print(m_a)
+		g_at = dgl.graph((m_at[0], m_at[1]))
+		g_at.edata['w'] = torch.ones(length).requires_grad_()
+		g_a = dgl.graph((m_a[0], m_a[1]))
+		g_a.edata['w'] = torch.ones(length).requires_grad_()
+		auxiliary_graph = dgl.adj_product_graph(g_at, g_a, 'w')
+		print(auxiliary_graph)
+		t2 = time.time()
+		remove = self.remove_non_output_nodes() # use mask to replace the for loop to speed up
+		print('get remove nodes spent ', time.time()-t2 )
+		print('remove nodes length')
+		print(len(remove))
+		
+		if len(remove)>0:
+			t3 = time.time()
+			auxiliary_graph.remove_nodes(torch.tensor(remove))
+			print('auxiliary_graph.remove_nodes spent ', time.time()-t3 )
+			
+		t4 = time.time()
+		adj = auxiliary_graph.adjacency_matrix().to_dense()
+		print('auxiliary_graph.to_dense() spent ', time.time()-t4 )
+		# print(adj)
+		t5 = time.time()
+		adj.fill_diagonal_(0)
+		print('auxiliary_graph.adj.fill_diagonal_(0) spent ', time.time()-t5 )
+		# print(adj)
+		t6 = time.time()
+		adj= adj.to_sparse()
+		print('auxiliary_graph.adj.to_sparse() spent ', time.time()-t6 )
+		# print(adj)
+		
+		t7 = time.time()
+		adj_edges = adj._indices().tolist()
+		auxiliary_graph_no_diag = dgl.graph((adj_edges[0], adj_edges[1]), )
+		print('auxiliary_graph_no_diag generation spent ', time.time()-t7 )
+		
+		t8 = time.time()
+		partition = dgl.metis_partition(g=auxiliary_graph_no_diag,k=self.args.num_batch)
+		print('auxiliary_graph_no_diag dgl.metis_partition spent ', time.time()-t8 )
+		res=[]
+		for pid in partition:
+			nids = partition[pid].ndata[dgl.NID].tolist()
+			res.append(sorted(nids))
+		# print(res)
+		self.local_batched_seeds_list=res
+		
+		return 
+	
+	
 
 
 	def simple_gen_K_batches_seeds_list(self):
-		# full_len = len(self.local_output_nids)  # get the total number of output nodes
-		# self.batch_size=get_mini_batch_size(full_len,self.num_batch)
-		
-		if self.selection_method == "random" or self.selection_method == "range":
-			self.gen_batched_seeds_list()
-			# print('re-gp random ')
-			# t=time.time()
-			# indices = random_shuffle(full_len)
-			# batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
-			# print('random for re-graph_partition spend: ', time.time()-t)
-			# self.local_batched_seeds_list=batches_nid_list
-			# self.weights_list=weights_list
-
-		if self.selection_method == "REG" :
+		if self.selection_method == "random":
+			print('re-gp random ')
+		if self.selection_method == "REG" or self.selection_method == "Betty":
 			
 			t1=time.time()
 			u, v =self.layer_block.edges()[0], self.layer_block.edges()[1] # local edges
 			g = dgl.graph((u,v))
 			print('g = dgl.graph((u,v))  spent ', time.time()-t1 )
-
-			print('the counter of in-degree current block !!!!!!!!!!!!!!_______________!!!!!!!!!!')
-			graph_in = Counter(g.in_degrees().tolist())
-			print(graph_in)
-			print()
+			
 			t13 = time.time()
 			A = g.adjacency_matrix()
 			print('A = g.adjacency_matrix() spent ', time.time()-t13 )
-			
+			# t14 = time.time()
 			AT= torch.transpose(A, 0, 1)
-			
+			# print(A)
+			# print(AT)
 			m_at = AT._indices().tolist()
 			m_a  = A._indices().tolist()
 			length = len(m_a[0])
-			
+			# print(m_at)
+			# print(m_a)
 			g_at = dgl.graph((m_at[0], m_at[1]))
 			g_at.edata['w'] = torch.ones(length).requires_grad_()
 			g_a = dgl.graph((m_a[0], m_a[1]))
@@ -154,12 +210,14 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 			auxiliary_graph = dgl.adj_product_graph(g_at, g_a, 'w')
 			print('auxiliary_graph')
 			print(auxiliary_graph)
-		
+			# print(auxiliary_graph.nodes())
+			# print(auxiliary_graph.edata)
+			# print(auxiliary_graph.edges())
 			t2 = time.time()
 			remove = self.remove_non_output_nodes() # use mask to replace the for loop to speed up
 			print('get remove nodes spent ', time.time()-t2 )
-			print('remove nodes length ', len(remove))
-			print()
+			print('remove nodes length')
+			print(len(remove))
 			
 			if len(remove)>0:
 				t3 = time.time()
@@ -167,20 +225,206 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 				print('auxiliary_graph.remove_nodes spent ', time.time()-t3 )
 				print('after remove non output nodes the auxiliary_graph')
 				print(auxiliary_graph)
-			
+				# print(auxiliary_graph.nodes())
+				# print(auxiliary_graph.edata)
+				# print(auxiliary_graph.edges())
 			t7 = time.time()
 			auxiliary_graph_no_diag = dgl.remove_self_loop(auxiliary_graph)
 			print('auxiliary_graph_no_diag generation spent ', time.time()-t7 )
-		
+			# adj = auxiliary_graph_no_diag.adjacency_matrix().to_dense()
+			# print(adj)
+			# print(auxiliary_graph_no_diag.edata['w'])
 			print()
 			print('the counter of shared neighbor distribution')
 			res = Counter(auxiliary_graph_no_diag.edata['w'].tolist())
 			print(res)
-			
+			# print(auxiliary_graph_no_diag.edata['w'])
 			ll=len(auxiliary_graph_no_diag.edata['w'])
 			print(len(auxiliary_graph_no_diag.edata['w']))
+			# TODO
+			print('--------------------------------------- new test ---------------------')
+			# n = g.num_nodes()
+			# e = g.num_edges()
+			# xadj = np.empty(n+1, int)
+			# adjncy = np.empty(2*e, int)
+			# eweights = np.empty(2*e, int)
+			# end_node = 0
+			# xadj[0] = 0
+			# for step, i in enumerate (g.nodes()):
+			# 	print('nodes ', i)
+			# 	print()
+			# 	if len(g.out_edges(i)[0]):
+			# 		# print(g.out_edges(i, form='all'))
+			# 		(start, end, eid) = g.out_edges(i, form='all')
+			# 		tmp = len(end)
+			# 		adjncy[end_node: end_node + tmp] = end.tolist()
+			# 		eweights[end_node: end_node + tmp] = eid
+			# 		end_node = end_node + tmp
+			# 		# print('\tedges- ', start)
+			# 		# if start == i:
+					# # 	print('\tedges== ', end)
+					# 	print()
+					# 	adjncy[end_node] = end
+					# 	eweights[end_node] = eid
+					# 	end_node += 1
+					# if end == i :
+					# 	print('\tedges=- ', start)
+					# 	print()
+					# 	adjncy[end_node] = start
+					# 	eweights[end_node] = eid
+					# 	end_node += 1
+				# xadj[step+1] = end_node
 			
+			# print('xadj')
+			# print(xadj)
+			# print('adjncy')
+			# print(adjncy)
+			# print('eweights')
+			# print(eweights)
+			# print()
+			# print('nx.to_numpy_matrix(g)')
+			# print()
+			# eweights = auxiliary_graph_no_diag.edata['w'][eweights].tolist()
+			# n_parts=4
+			# cutcount, part_vert = pymetis.part_graph(n_parts, xadj=xadj,adjncy=adjncy, eweights=eweights)
 
+			# print(cutcount)
+			# print('part_vert')
+			print('--------------------------------------- new test ---------------------')
+
+
+			if 'set_one' in self.args.selection_method:
+				auxiliary_graph_no_diag.edata['w']=torch.ones(ll).requires_grad_()
+			if 's1' in self.args.selection_method:
+				print()
+				print('before step function auxiliary_graph_no_diag.edata[w]')
+				# print(auxiliary_graph_no_diag.edata['w'])
+				print()
+				aux_tensor = auxiliary_graph_no_diag.edata['w']
+				# s1 : (1-3)->10;  rest-->1
+				# part_one = aux_tensor <= 3
+				# part_two = aux_tensor > 3
+				# aux_tensor[part_one] = 10
+				# aux_tensor[part_two] = 1
+
+				part_one = aux_tensor <= 3
+				part_two = aux_tensor > 3
+				part_three = aux_tensor > 6
+				aux_tensor[part_one] = 1
+				aux_tensor[part_two] = 10
+				aux_tensor[part_three] = 20
+
+				# # s1 : (1-4) -> 1;  rest-->10
+				# part_one = aux_tensor <= 4
+				# part_two = aux_tensor > 4
+				# aux_tensor[part_one] = 1
+				# aux_tensor[part_two] = 10
+
+				print()
+				print('after step function v.1.0 auxiliary_graph_no_diag.edata[w]')
+				print('the counter of shared neigbor distribution')
+				res_ = Counter(auxiliary_graph_no_diag.edata['w'].tolist())
+				print(res_)
+				# print(auxiliary_graph_no_diag.edata['w'])
+				print()
+				# draw_distribution(auxiliary_graph_no_diag.edata['w'])
+				# print()
+			if 's0' in self.args.selection_method:
+				print()
+				print('before step function auxiliary_graph_no_diag.edata[w]')
+				# print(auxiliary_graph_no_diag.edata['w'])
+				print()
+				# aux_tensor = auxiliary_graph_no_diag.edata['w']
+				# s1 : all-->0
+				# auxiliary_graph_no_diag.edata['w']=torch.zeros(ll)
+				# auxiliary_graph_no_diag.edata['w']=torch.zeros(ll).requires_grad_()
+				# auxiliary_graph_no_diag.edata['w']=torch.ones(ll).requires_grad_()*40
+				
+				eID = auxiliary_graph_no_diag.edges('all')
+				print(eID[2])
+				f = self.args.selection_method_sub
+				# if 'drop all edges':=============================================== drop all edges -*f0*-
+				if f == 'f0':
+					auxiliary_graph_no_diag.remove_edges(eID[2])
+				
+				# if 'drop half edges':=============================================== drop 0.8 edges -*f1*- rate = 0.2
+				
+				elif f == 'f1':
+					rate = 0.2
+					llen = len(eID[2])
+					rand_mat = torch.rand(1, llen)
+					k = round(rate * llen) # For the general case change drop rate to the percentage you need
+					# 0.2 means 2:1 , the rest is 0.
+					k_th_quant = torch.topk(rand_mat, k, largest = False)[0][:,-1:]
+					bool_tensor = rand_mat <= k_th_quant
+					drop_mask = torch.where(bool_tensor,torch.tensor(1),torch.tensor(0))
+					drop_mask = torch.gt(drop_mask, 0)
+					eRemove = torch.masked_select(eID[2], drop_mask)
+					auxiliary_graph_no_diag.remove_edges(eRemove)
+				# # if 'drop half edges':============================================ drop half edges -*f2*- rate = 0.5
+				elif f == 'f2':
+					rate = 0.5
+					llen = len(eID[2])
+					rand_mat = torch.rand(1, llen)
+					k = round(rate * llen) # For the general case change drop rate to the percentage you need
+					# 0.2 means 2:1 , the rest is 0.
+					k_th_quant = torch.topk(rand_mat, k, largest = False)[0][:,-1:]
+					bool_tensor = rand_mat <= k_th_quant
+					drop_mask = torch.where(bool_tensor,torch.tensor(1),torch.tensor(0))
+					drop_mask = torch.gt(drop_mask, 0)
+					eRemove = torch.masked_select(eID[2], drop_mask)
+					auxiliary_graph_no_diag.remove_edges(eRemove)
+				
+				
+				# if 'drop no edges':=============================================== drop no edges -*f3*- 
+				elif f == 'f3':
+					print('drop no edges')
+				# if 'drop edges':=================== drop large number of shared neighbor edges 
+				# hist = torch.histc(auxiliary_graph_no_diag.edata['w'])
+				# print('hist of auxiliary_graph_no_diag edata weights')
+				# print(hist)
+				elif f == 'f4':
+					print('drop edges based on redundancy f4')
+					aux_tensor = auxiliary_graph_no_diag.edata['w']
+					# s1 : (1-3) keep;  rest--> drop   # -*f4*- 
+					part_one = aux_tensor <= 3
+					part_two = aux_tensor > 3
+					eRemove = eID[2][part_two]
+					auxiliary_graph_no_diag.remove_edges(eRemove)
+				
+				elif f == 'f5':
+					print('drop edges based on redundancy f5')
+					aux_tensor = auxiliary_graph_no_diag.edata['w']
+					# # s2 : (1) keep;  rest--> drop   # -*f5*- 
+					part_one = aux_tensor <= 1
+					part_two = aux_tensor > 1
+					eRemove = eID[2][part_two]
+					auxiliary_graph_no_diag.remove_edges(eRemove)
+				elif f == 'f6':
+					print('drop edges based on redundancy f6')
+					aux_tensor = auxiliary_graph_no_diag.edata['w']
+					# s3 : (>1) keep;  rest--> drop   # -*f6*- 
+					part_one = aux_tensor > 1
+					part_two = aux_tensor <=  1
+				elif f == 'f7':
+					print('drop edges based on redundancy f7')
+					aux_tensor = auxiliary_graph_no_diag.edata['w']
+					# s4 : (>3) keep;  rest--> drop   # -*f7*- 
+					part_one = aux_tensor >3
+					part_two = aux_tensor <= 3
+					eRemove = eID[2][part_two]
+					auxiliary_graph_no_diag.remove_edges(eRemove)
+				
+				
+				
+				
+				
+				print()
+				print('after step function v.2.0 all zero auxiliary_graph_no_diag.edata[w]')
+				print('the counter of shared neigbor distribution')
+				res = Counter(auxiliary_graph_no_diag.edata['w'].tolist())
+				print(res)
+			
 			t8 = time.time()
 			partition = dgl.metis_partition(g=auxiliary_graph_no_diag,k=self.args.num_batch)
 			print('auxiliary_graph_no_diag dgl.metis_partition spent ', time.time()-t8 )
@@ -192,6 +436,11 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 			if set(sum(res,[]))!=set(self.local_output_nids):
 				print('the difference of graph partition res and self.local_output_nids')
 				
+			
+			# full_len = len(self.local_output_nids)  # get the total number of output nodes
+			# indices = random_shuffle(full_len)
+			# self.batch_size = ceil(full_len/self.args.num_batch)
+			# res, _=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
 			
 			self.local_batched_seeds_list=res
 			
@@ -366,7 +615,7 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		self.ideal_partition_size=(self.full_src_len/self.num_batch)
 		
 		t2 = time.time()
-		
+		# self.gen_K_batches_seeds_list()
 		self.simple_gen_K_batches_seeds_list()
 		print('total k batches seeds list generation spend ', time.time()-t2 )
 
@@ -430,6 +679,9 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		self.global_to_local() # global to local            self.local_batched_seeds_list
 		print('global_2_local spend time (sec)', (time.time()-ts))
 		
+		# t1 = time.time()
+		# self.gen_batched_seeds_list()
+
 		t2=time.time()
 		# Then, the graph_parition is run in block to graph local nids,it has no relationship with raw graph
 		self.graph_partition()

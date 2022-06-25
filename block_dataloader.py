@@ -104,21 +104,6 @@ def get_global_graph_edges_ids_block(raw_graph, block):
 
 	return global_graph_eids_raw, (raw_src, raw_dst)
 
-# def get_global_graph_edges_ids_2(raw_graph, block_to_graph):
-	
-# 	edges=block_to_graph.edges(order='eid')
-# 	edge_src_local = edges[0]
-# 	edge_dst_local = edges[1]
-# 	induced_src = block_to_graph.srcdata[dgl.NID]
-# 	induced_dst = block_to_graph.dstdata[dgl.NID]
-		
-# 	raw_src, raw_dst=induced_src[edge_src_local], induced_dst[edge_dst_local]
-# 	# raw_src = block_to_graph.ndata[dgl.NID]['_N_src'][src] 
-# 	# raw_dst= block_to_graph.ndata[dgl.NID]['_N_dst'][dst]
-# 	global_graph_eids_raw = raw_graph.edge_ids(raw_src, raw_dst)
-# 	# https://docs.dgl.ai/en/0.4.x/generated/dgl.DGLGraph.edge_ids.html#dgl.DGLGraph.edge_ids
-
-# 	return global_graph_eids_raw, (raw_src, raw_dst)
 
 
 
@@ -456,15 +441,7 @@ def generate_blocks_for_one_layer(raw_graph, block_2_graph, batches_nid_list):
 		t_ = time.time()
 		if step == ll-1:
 			print()
-		# if len(prev_batched_eid_list) and prev_batched_eid_list[step]:
-		# 	new_eids=current_block_global_eid.tolist()
-		# 	pure_new_eid=[]
-		# 	[pure_new_eid.append(eid) for eid in new_eids if eid not in pure_new_eid and eid not in prev_batched_eid_list[step]] #remove duplicate
-		# 	current_block_global_eid=prev_batched_eid_list[step]+pure_new_eid
-		# 	current_block_global_eid=torch.tensor(current_block_global_eid, dtype=torch.long)
-		# 	cur_block = generate_one_block(raw_graph, current_block_global_eid, srcnid, dstnid)
-		# else:
-		# 	cur_block = generate_one_block(raw_graph, current_block_global_eid, srcnid, dstnid)
+		
 		cur_block = generate_one_block(raw_graph, current_block_global_eid, srcnid, dstnid)
 
 		t__=time.time()
@@ -520,37 +497,6 @@ def generate_blocks_for_one_layer(raw_graph, block_2_graph, batches_nid_list):
 
 
 	return blocks, src_list,dst_list,(connection_time, block_gen_time, mean_block_gen_time)
-
-
-
-
-
-# def generate_dataloader_w_partition(raw_graph, full_block_dataloader, args):
-# 	for _,(src_full, dst_full, full_blocks) in enumerate(full_block_dataloader):
-# 		for layer, block_to_graph in enumerate(full_blocks):
-		
-# 			current_block_eidx_raw, current_block_edges_raw = get_global_graph_edges_ids(raw_graph, block_to_graph)
-# 			block_to_graph.edata['_ID'] = current_block_eidx_raw
-# 			if layer == 0:
-# 				my_graph_partitioner=Graph_Partitioner(block_to_graph, args) #init a graph partitioner object
-# 				batched_output_nid_list,weights_list,batch_list_generation_time, p_len_list=my_graph_partitioner.init_graph_partition()
-
-# 				print('partition_len_list')
-# 				print(p_len_list)
-# 				args.batch_size=my_graph_partitioner.batch_size
-				
-# 				blocks, src_list, dst_list, time_1 = generate_blocks_for_one_layer(raw_graph, block_to_graph, batched_output_nid_list)
-# 				# TODO
-# 				#change the generate block
-# 				connection_time, block_gen_time, mean_block_gen_time = time_1
-# 				# batch_list_generation_time = t1 - tt
-# 				time_2 = (connection_time, block_gen_time, mean_block_gen_time, batch_list_generation_time)
-# 			else:
-# 				return
-# 	data_loader=[]
-# 	# TODO
-# 	return data_loader, weights_list, time_2
-
 
 
 
@@ -650,23 +596,23 @@ def generate_dataloader_gp_block(raw_graph, full_block_dataloader, args):
 	args.num_batch=num_batch
 
 	##########################################################################################################
-	# check_t = 0
-	# b_gen_t = 0
-	# b_gen_t_mean = 0
-	# gp_time = 0
-	# for _ in range(args.num_re_partition):
-	# 	data_loader, weights_list, gp_time, [check_t,b_gen_t, b_gen_t_mean] = re_partition_block(raw_graph, full_blocks, args,  data_loader, weights_list)
-	# print('----------===============-------------===============-------------the number of batches *****----', len(data_loader))
-	# print()
-	# print('original number of batches: ',len(data_loader) - args.num_re_partition)
-	# args.num_batch = len(data_loader) - args.num_re_partition   #reset  the original number of batches
-	# if check_t:
-	# 	connect_checking_time_list = connect_checking_time_list + [check_t]
+	check_t = 0
+	b_gen_t = 0
+	b_gen_t_mean = 0
+	gp_time = 0
+	for _ in range(args.num_re_partition):
+		data_loader, weights_list, gp_time, [check_t,b_gen_t, b_gen_t_mean] = re_partition_block(raw_graph, full_blocks, args,  data_loader, weights_list)
+	print('----------===============-------------===============-------------the number of batches *****----', len(data_loader))
+	print()
+	print('original number of batches: ',len(data_loader) - args.num_re_partition)
+	args.num_batch = len(data_loader) - args.num_re_partition   #reset  the original number of batches
+	if check_t:
+		connect_checking_time_list = connect_checking_time_list + [check_t]
 
-	# block_gen_time_total = block_gen_time_total + b_gen_t
-	# batch_blocks_gen_mean_time = block_gen_time_total/len(data_loader)/args.num_layers
-	# print('re graph partition time: ', gp_time)
-	# print()
+	block_gen_time_total = block_gen_time_total + b_gen_t
+	batch_blocks_gen_mean_time = block_gen_time_total/len(data_loader)/args.num_layers
+	print('re graph partition time: ', gp_time)
+	print()
 	##########################################################################################################
 
 	return data_loader, weights_list, [sum(connect_checking_time_list), block_gen_time_total, batch_blocks_gen_mean_time]
