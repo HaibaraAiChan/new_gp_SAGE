@@ -13,7 +13,7 @@ lr=0.01
 dropout=0.5
 
 run=1
-epoch=1
+epoch=5
 logIndent=0
 
 num_batch=(60)

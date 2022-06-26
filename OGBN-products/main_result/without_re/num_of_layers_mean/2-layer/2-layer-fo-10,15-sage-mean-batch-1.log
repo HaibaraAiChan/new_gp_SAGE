@@ -1,0 +1,154 @@
+Using backend: pytorch
+main start at this time 1656194039.779323
+-----------------------------------------before load data 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+#nodes: 2449029
+#edges: 123718024
+#classes: 47
+success----------------------------------------
+196571
+39255
+2164782
+# Nodes: 2400608
+# Edges: 123718024
+# Train: 196571
+# Val: 39255
+# Test: 2164782
+# Classes: 47
+
+----------------------------------------start of run function 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+in feats:  100
+----------------------------------------before model to device 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+----------------------------------------after model to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0002803802490234375  GigaBytes
+Max Memory Allocated: 0.0002803802490234375  GigaBytes
+
+----------------------------------------before generate dataloader block 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0002803802490234375  GigaBytes
+Max Memory Allocated: 0.0002803802490234375  GigaBytes
+
+-----------------------------------------after block dataloader generation 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0002803802490234375  GigaBytes
+Max Memory Allocated: 0.0002803802490234375  GigaBytes
+
+connection checking time:  0
+block generation total time  0
+average batch blocks generation time:  0
+block dataloader generation time/epoch 0.5795857906341553
+pseudo mini batch 0 input nodes size: 1721554
+----------------------------------------before load block subtensor 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0002803802490234375  GigaBytes
+Max Memory Allocated: 0.0002803802490234375  GigaBytes
+
+----------------------------------------before batch input features to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0002803802490234375  GigaBytes
+Max Memory Allocated: 0.0002803802490234375  GigaBytes
+
+----------------------------------------after batch input features to device
+ Nvidia-smi: 1.6600341796875 GB
+    Memory Allocated: 0.6416096687316895  GigaBytes
+Max Memory Allocated: 0.6416096687316895  GigaBytes
+
+----------------------------------------after  batch labels to device
+ Nvidia-smi: 1.6795654296875 GB
+    Memory Allocated: 0.6430745124816895  GigaBytes
+Max Memory Allocated: 0.6430745124816895  GigaBytes
+
+----------------------------------------after load block subtensor  
+ Nvidia-smi: 1.6795654296875 GB
+    Memory Allocated: 0.6430745124816895  GigaBytes
+Max Memory Allocated: 0.6430745124816895  GigaBytes
+
+----------------------------------------after blocks to device 
+ Nvidia-smi: 1.8299560546875 GB
+    Memory Allocated: 0.7398257255554199  GigaBytes
+Max Memory Allocated: 0.7398257255554199  GigaBytes
+
+----------------------------------------before batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 1.8299560546875 GB
+    Memory Allocated: 0.7398257255554199  GigaBytes
+Max Memory Allocated: 0.7398257255554199  GigaBytes
+
+first layer input nodes number: 1721554
+first layer output nodes number: 1005832
+edges number: 9818061
+torch.Size([1721554, 100])
+torch.Size([1005832, 256])
+torch.Size([196571, 47])
+-----------------------------------------batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 6.4041748046875 GB
+    Memory Allocated: 3.6516318321228027  GigaBytes
+Max Memory Allocated: 4.331475734710693  GigaBytes
+
+-----------------------------------------after loss calculation
+ Nvidia-smi: 6.4041748046875 GB
+    Memory Allocated: 3.6860504150390625  GigaBytes
+Max Memory Allocated: 4.331475734710693  GigaBytes
+
+-----------------------------------------after loss backward
+ Nvidia-smi: 8.3592529296875 GB
+    Memory Allocated: 0.9223127365112305  GigaBytes
+Max Memory Allocated: 5.373875617980957  GigaBytes
+
+-----------------------------------------after optimizer step
+ Nvidia-smi: 8.3592529296875 GB
+    Memory Allocated: 0.9228734970092773  GigaBytes
+Max Memory Allocated: 5.373875617980957  GigaBytes
+
+-----------------------------------------after optimizer zero grad
+ Nvidia-smi: 8.3592529296875 GB
+    Memory Allocated: 0.9228734970092773  GigaBytes
+Max Memory Allocated: 5.373875617980957  GigaBytes
+
+times | data loading | block to device | model prediction | loss calculation | loss backward |  optimizer step |
+      |0.3004312515258789 |0.3915276527404785 |0.786036491394043 |0.0002655982971191406 |0.06006169319152832 |0.0036203861236572266 |
+----------------------------------------------------------pseudo_mini_loss sum 6.304258823394775
+Total (block generation + training)time/epoch 2.160123109817505
+Training time/epoch 1.5801784992218018
+Training time without block to device /epoch 1.1886508464813232
+Training time without total dataloading part /epoch 0.8499841690063477
+load block tensor time/epoch 0.3004312515258789
+block to device time/epoch 0.3915276527404785
+input features size transfer per epoch 1.341104507446289e-07
+blocks size to device per epoch 9.685754776000977e-08
+ Run 0| Epoch 0 |
+Number of nodes for computation during this epoch:  2727386
+Number of first layer input nodes during this epoch:  1721554
+Number of first layer output nodes during this epoch:  1005832
+GraphSAGE(
+  (layers): ModuleList(
+    (0): SAGEConv(
+      (fc_self): Linear(in_features=100, out_features=256, bias=False)
+      (fc_neigh): Linear(in_features=100, out_features=256, bias=False)
+    )
+    (1): SAGEConv(
+      (fc_self): Linear(in_features=256, out_features=47, bias=False)
+      (fc_neigh): Linear(in_features=256, out_features=47, bias=False)
+    )
+  )
+  (dropout): Dropout(p=0.5, inplace=False)
+)
+total model parameters size  75264
+trainable parameters
+layers.0.fc_self.weight, torch.Size([256, 100])
+layers.0.fc_neigh.weight, torch.Size([256, 100])
+layers.1.fc_self.weight, torch.Size([47, 256])
+layers.1.fc_neigh.weight, torch.Size([47, 256])
+----------------------------------------
+un-trainable parameters

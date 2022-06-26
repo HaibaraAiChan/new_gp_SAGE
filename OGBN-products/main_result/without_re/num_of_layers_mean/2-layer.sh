@@ -13,10 +13,10 @@ lr=0.01
 dropout=0.5
 
 run=1
-epoch=1
+epoch=5
 logIndent=0
 
-num_batch=(120)
+num_batch=(1)
 
 pMethodList=(REG)
 
@@ -25,15 +25,14 @@ num_re_partition=(0)
 re_partition_method=random
 
 
-layersList=(6)
-fan_out_list=(10,25,30,40,50,60)
-fan_out_list=(10,15,20,20,20,20)
+layersList=(2)
+fan_out_list=(10,25)
 
 hiddenList=(256)
 AggreList=(mean)
 
 savePath=./main_result/without_re/num_of_layers_mean/
-# ./main_result/without_re/num_of_layers_mean/6-layer.sh
+
 
 for Aggre in ${AggreList[@]}
 do      

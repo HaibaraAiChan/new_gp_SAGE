@@ -13,10 +13,10 @@ lr=0.01
 dropout=0.5
 
 run=1
-epoch=1
+epoch=5
 logIndent=0
 
-num_batch=(32 64)
+num_batch=(1)
 
 pMethodList=(REG)
 
@@ -25,12 +25,13 @@ num_re_partition=(0)
 re_partition_method=random
 
 
-layersList=(4)
-fan_out_list=(10,25,30,40)
+layersList=(1)
+fan_out_list=(10)
 
 hiddenList=(256)
 AggreList=(mean)
 
+savePath=./main_result/without_re/num_of_layers_mean/
 
 
 for Aggre in ${AggreList[@]}
@@ -51,7 +52,9 @@ do
 							
 							for rep in ${num_re_partition[@]}
 							do
-							
+								wf=${layers}-layer-fo-${fan_out}-sage-${Aggre}-h-${hidden}-batch-${nb}-rep-${rep}.log
+								echo $wf
+
 								python $File \
 								--dataset $Data \
 								--aggre $Aggre \
@@ -71,7 +74,7 @@ do
 								--fan-out $fan_out \
 								--log-indent $logIndent \
 								--load-full-batch True \
-								> ./main_result/without_re/hidden_size/${layers}-layer-fo-${fan_out}-sage-${Aggre}-h-${hidden}-batch-${nb}-rep-${rep}.log
+								> ${savePath}${wf}
 
 							done
 						done

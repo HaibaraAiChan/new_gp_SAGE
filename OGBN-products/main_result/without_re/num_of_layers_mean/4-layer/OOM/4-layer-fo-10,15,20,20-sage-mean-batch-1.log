@@ -1,0 +1,125 @@
+Using backend: pytorch
+main start at this time 1656193758.3246994
+-----------------------------------------before load data 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+#nodes: 2449029
+#edges: 123718024
+#classes: 47
+success----------------------------------------
+196571
+39255
+2164782
+# Nodes: 2400608
+# Edges: 123718024
+# Train: 196571
+# Val: 39255
+# Test: 2164782
+# Classes: 47
+
+----------------------------------------start of run function 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+in feats:  100
+----------------------------------------before model to device 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+----------------------------------------after model to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0012569427490234375  GigaBytes
+Max Memory Allocated: 0.0012569427490234375  GigaBytes
+
+----------------------------------------before generate dataloader block 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0012569427490234375  GigaBytes
+Max Memory Allocated: 0.0012569427490234375  GigaBytes
+
+-----------------------------------------after block dataloader generation 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0012569427490234375  GigaBytes
+Max Memory Allocated: 0.0012569427490234375  GigaBytes
+
+connection checking time:  0
+block generation total time  0
+average batch blocks generation time:  0
+block dataloader generation time/epoch 3.16018009185791
+pseudo mini batch 0 input nodes size: 2249857
+----------------------------------------before load block subtensor 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0012569427490234375  GigaBytes
+Max Memory Allocated: 0.0012569427490234375  GigaBytes
+
+----------------------------------------before batch input features to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 0.0012569427490234375  GigaBytes
+Max Memory Allocated: 0.0012569427490234375  GigaBytes
+
+----------------------------------------after batch input features to device
+ Nvidia-smi: 1.8572998046875 GB
+    Memory Allocated: 0.8393940925598145  GigaBytes
+Max Memory Allocated: 0.8393940925598145  GigaBytes
+
+----------------------------------------after  batch labels to device
+ Nvidia-smi: 1.8572998046875 GB
+    Memory Allocated: 0.8411006927490234  GigaBytes
+Max Memory Allocated: 0.8411006927490234  GigaBytes
+
+----------------------------------------after load block subtensor  
+ Nvidia-smi: 1.8572998046875 GB
+    Memory Allocated: 0.8411006927490234  GigaBytes
+Max Memory Allocated: 0.8411006927490234  GigaBytes
+
+----------------------------------------after blocks to device 
+ Nvidia-smi: 2.4490966796875 GB
+    Memory Allocated: 1.3631572723388672  GigaBytes
+Max Memory Allocated: 1.3631572723388672  GigaBytes
+
+----------------------------------------before batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 2.4490966796875 GB
+    Memory Allocated: 1.3631572723388672  GigaBytes
+Max Memory Allocated: 1.3631572723388672  GigaBytes
+
+first layer input nodes number: 2249857
+first layer output nodes number: 2190926
+edges number: 19566822
+torch.Size([2249857, 100])
+torch.Size([2190926, 256])
+input nodes number: 2190926
+output nodes number: 1951734
+edges number: 25651368
+torch.Size([2190926, 256])
+torch.Size([1951734, 256])
+input nodes number: 1951734
+output nodes number: 1119184
+edges number: 20710690
+torch.Size([1951734, 256])
+torch.Size([1119184, 256])
+torch.Size([196571, 47])
+-----------------------------------------batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 22.4041748046875 GB
+    Memory Allocated: 17.296040058135986  GigaBytes
+Max Memory Allocated: 18.076996326446533  GigaBytes
+
+-----------------------------------------after loss calculation
+ Nvidia-smi: 22.4041748046875 GB
+    Memory Allocated: 17.330458641052246  GigaBytes
+Max Memory Allocated: 18.076996326446533  GigaBytes
+
+Traceback (most recent call last):
+  File "full_Betty_products_sage.py", line 470, in <module>
+    main()
+  File "full_Betty_products_sage.py", line 466, in main
+    best_test = run(args, device, data)
+  File "full_Betty_products_sage.py", line 289, in run
+    pseudo_mini_loss.backward()#------------*
+  File "/home/cc/.local/lib/python3.6/site-packages/torch/tensor.py", line 221, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph)
+  File "/home/cc/.local/lib/python3.6/site-packages/torch/autograd/__init__.py", line 132, in backward
+    allow_unreachable=True)  # allow_unreachable flag
+RuntimeError: CUDA out of memory. Tried to allocate 1.07 GiB (GPU 0; 23.62 GiB total capacity; 18.17 GiB already allocated; 108.44 MiB free; 19.08 GiB reserved in total by PyTorch)
