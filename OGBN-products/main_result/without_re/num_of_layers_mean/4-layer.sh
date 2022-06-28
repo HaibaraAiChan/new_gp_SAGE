@@ -13,10 +13,10 @@ lr=0.01
 dropout=0.5
 
 run=1
-epoch=5
+epoch=1
 logIndent=0
 
-num_batch=(3)
+num_batch=(1)
 
 pMethodList=(REG)
 
@@ -28,7 +28,7 @@ re_partition_method=random
 layersList=(4)
 fan_out_list=(10,25,30,40)
 
-hiddenList=(256)
+hiddenList=(6)
 AggreList=(mean)
 
 savePath=./main_result/without_re/num_of_layers_mean/

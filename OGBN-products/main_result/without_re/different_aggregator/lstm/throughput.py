@@ -56,7 +56,10 @@ def computation_eff(infile):
 	
 	if sum(pure_train_times)==0:
 			return 0
-	real_pure_train_eff = sum(compute_num_nid)/sum(pure_train_times)
+	if len(pure_train_times)>1: 
+		pure_train_times = pure_train_times[1:]
+	real_pure_train_eff = mean(compute_num_nid)/mean(pure_train_times)
+	print('mean nodes: ',mean(compute_num_nid))
 	pure_train_t = mean(pure_train_times)
 	
 	return real_pure_train_eff, pure_train_t
@@ -73,31 +76,47 @@ def Memory_usage(infile):
 
 	return max_mem[-1]
 		
-
 if __name__=='__main__':
 	res={}
 	train_time={}
 	mem={}
 	for filename in os.listdir("./"):
-		if filename.endswith(".log"):
+		if filename.endswith("6.log"):
 			num_batch = int(get_num_batch(filename))
 			eff, t = computation_eff(filename)
 			res[num_batch]=eff
 			train_time[num_batch]=t
-			mem_tmp = Memory_usage(filename)
-			mem[num_batch]=mem_tmp
+			# mem_tmp = Memory_usage(filename)
+			# mem[num_batch]=mem_tmp
 	print('computation eff')
 	print(dict(sorted(res.items())))
 	print('time')
 	print(dict(sorted(train_time.items())))
-	print()
-	print('cuda max mem')
-	print(dict(sorted(mem.items())))
-	print()
-	# df=pd.DataFrame(res).transpose()
-	# df_res.index.name
-	# # df.columns=['num of batch','total nodes for computation/pure train time']
-	# print(df.to_markdown(tablefmt="grid"))
+
+# if __name__=='__main__':
+# 	res={}
+# 	train_time={}
+# 	mem={}
+# 	for filename in os.listdir("./"):
+# 		if filename.endswith(".log"):
+# 			num_batch = int(get_num_batch(filename))
+# 			eff, t = computation_eff(filename)
+# 			res[num_batch]=eff
+# 			train_time[num_batch]=t
+# 			mem_tmp = Memory_usage(filename)
+# 			mem[num_batch]=mem_tmp
+# 	print('computation eff')
+# 	print(dict(sorted(res.items())))
+# 	print('time')
+# 	print(dict(sorted(train_time.items())))
+# 	print()
+# 	print('cuda max mem')
+# 	print(dict(sorted(mem.items())))
+# 	print()
+# 	# df=pd.DataFrame(res).transpose()
+# 	# df_res.index.name
+# 	# # df.columns=['num of batch','total nodes for computation/pure train time']
+# 	# print(df.to_markdown(tablefmt="grid"))
 
 			
 # 	# data = {3: 7233092.558344982, 4: 7526558.609479932, 5: 10281525.910010189, 6: 9637163.811590359, 7: 15148023.417957973, 8: 14582559.197133293, 16: 18014837.01344873, 32: 23984937.36776107}
