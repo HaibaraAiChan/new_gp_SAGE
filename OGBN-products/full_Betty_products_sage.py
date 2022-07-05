@@ -20,7 +20,7 @@ import argparse
 import tqdm
 # import deepspeed
 import random
-from graphsage_model_products import GraphSAGE
+from graphsage_model_products_mem import GraphSAGE
 import dgl.function as fn
 from load_graph import load_reddit, inductive_split, load_ogb, load_cora, load_karate, prepare_data, load_pubmed
 from load_graph import load_ogbn_mag    ###### TODO
@@ -143,6 +143,9 @@ def run(args, device, data):
 	nvidia_smi_list=[]
 	# draw_nx_graph(g)
 	# gen_pyvis_graph_global(g,train_nid)
+	if args.selection_method =='metis':
+		args.o_graph = dgl.node_subgraph(g, train_nid)
+
 
 	sampler = dgl.dataloading.MultiLayerNeighborSampler(
 		[int(fanout) for fanout in args.fan_out.split(',')])
@@ -346,7 +349,7 @@ def count_parameters(model):
 	pytorch_total_params = sum(torch.numel(p) for p in model.parameters())
 	print('total model parameters size ', pytorch_total_params)
 	print('trainable parameters')
-    
+	
 	for name, param in model.named_parameters():
 		if param.requires_grad:
 			print (name + ', '+str(param.data.shape))
@@ -374,13 +377,13 @@ def main():
 	# argparser.add_argument('--dataset', type=str, default='cora')
 	# argparser.add_argument('--dataset', type=str, default='karate')
 	# argparser.add_argument('--dataset', type=str, default='reddit')
-	argparser.add_argument('--aggre', type=str, default='lstm')
-	# argparser.add_argument('--aggre', type=str, default='mean')
+	# argparser.add_argument('--aggre', type=str, default='lstm')
+	argparser.add_argument('--aggre', type=str, default='mean')
 	# argparser.add_argument('--selection-method', type=str, default='range')
 	# argparser.add_argument('--selection-method', type=str, default='random')
-	
-	argparser.add_argument('--selection-method', type=str, default='REG')
-	argparser.add_argument('--num-batch', type=int, default=9)
+	argparser.add_argument('--selection-method', type=str, default='metis')
+	# argparser.add_argument('--selection-method', type=str, default='REG')
+	argparser.add_argument('--num-batch', type=int, default=2)
 
 	argparser.add_argument('--re-partition-method', type=str, default='REG')
 	# argparser.add_argument('--re-partition-method', type=str, default='random')
@@ -392,8 +395,8 @@ def main():
 
 	argparser.add_argument('--num-hidden', type=int, default=256)
 
-	argparser.add_argument('--num-layers', type=int, default=2)
-	argparser.add_argument('--fan-out', type=str, default='10,25')
+	argparser.add_argument('--num-layers', type=int, default=1)
+	argparser.add_argument('--fan-out', type=str, default='10')
 	
 	
 
@@ -462,6 +465,7 @@ def main():
 		# return
 	else:
 		raise Exception('unknown dataset')
+		
 	
 	best_test = run(args, device, data)
 	

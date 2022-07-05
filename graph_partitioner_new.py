@@ -67,25 +67,43 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		self.batch_size=get_mini_batch_size(full_len,self.num_batch)
 		
 		indices=[]
-		if 'range' in self.selection_method: #'range_init_graph_partition' 
-			t=time.time()
-			indices = [i for i in range(full_len)]
-			batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
-			print('range_init for graph_partition spend: ', time.time()-t)
-		elif 'random' in self.selection_method : #'random_init_graph_partition' 
-			t=time.time()
-			indices = random_shuffle(full_len)
-			batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
-			print('random_init for graph_partition spend: ', time.time()-t)
-		elif 'balance' in self.selection_method: #'balanced_init_graph_partition' 
-			t=time.time()
-			batches_nid_list, weights_list=self.balanced_init()
-			print('balanced_init for graph_partition spend: ', time.time()-t)
+		# if 'range' in self.selection_method: #'range_init_graph_partition' 
+		# 	t=time.time()
+		# 	indices = [i for i in range(full_len)]
+		# 	batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
+		# 	print('range_init for graph_partition spend: ', time.time()-t)
+		# elif 'random' in self.selection_method : #'random_init_graph_partition' 
+		# 	t=time.time()
+		# 	indices = random_shuffle(full_len)
+		# 	batches_nid_list, weights_list=gen_batch_output_list(self.local_output_nids,indices,self.batch_size)
+		# 	print('random_init for graph_partition spend: ', time.time()-t)
+		# elif 'balance' in self.selection_method: #'balanced_init_graph_partition' 
+		# 	t=time.time()
+		# 	batches_nid_list, weights_list=self.balanced_init()
+		# 	print('balanced_init for graph_partition spend: ', time.time()-t)
+		if 'metis' in self.selection_method:
+			o_graph = self.args.o_graph
+			partition = dgl.metis_partition(g=o_graph,k=self.args.num_batch)
+			# print('---------------pure dgl.metis_partition spent ', time.time()-t8 )
+			res=[]
+			for pid in partition:
+				nids = partition[pid].ndata[dgl.NID].tolist()
+				res.append(sorted(nids))
+				print(len(nids))
+			if set(sum(res,[]))!=set(self.local_output_nids):
+				print('--------pure    check:     the difference of graph partition res and self.local_output_nids')
+			batches_nid_list = res
+			weights_list = []
+			output_num = len(self.local_output_nids)
+			for pid_list in res:
+				pid_len = len(pid_list)
+				weights_list.append(pid_len/output_num)
 		else:
 			print('\t\t\t error in seletion method !!!')
 			
 		
 		self.local_batched_seeds_list=batches_nid_list
+		
 		self.weights_list=weights_list
 
 		print('The batched output nid list before graph partition')
@@ -116,7 +134,7 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		# full_len = len(self.local_output_nids)  # get the total number of output nodes
 		# self.batch_size=get_mini_batch_size(full_len,self.num_batch)
 		
-		if self.selection_method == "random" or self.selection_method == "range":
+		if self.selection_method == "random" or self.selection_method == "range" or self.selection_method=="metis":
 			self.gen_batched_seeds_list()
 			# print('re-gp random ')
 			# t=time.time()

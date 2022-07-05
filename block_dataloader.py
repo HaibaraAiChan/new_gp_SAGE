@@ -407,7 +407,7 @@ def generate_dataloader_block(raw_graph, full_block_dataloader, args):
 	if args.num_batch == 1:
 		return full_block_dataloader,[1], [0, 0, 0]
 	
-	if 'REG' in args.selection_method : # Betty
+	if 'REG' in args.selection_method or 'metis' in args.selection_method: # Betty
 		return generate_dataloader_gp_block(raw_graph, full_block_dataloader, args)
 	else: #'range' or 'random' in args.selection_method:
 		return generate_dataloader_wo_Betty_block(raw_graph, full_block_dataloader, args)
@@ -417,7 +417,7 @@ def generate_blocks_for_one_layer(raw_graph, block_2_graph, batches_nid_list):
 		
 	layer_src = block_2_graph.srcdata[dgl.NID]
 	layer_dst = block_2_graph.dstdata[dgl.NID]
-	layer_eid = block_2_graph.edata[dgl.EID].tolist()
+	layer_eid = block_2_graph.edata[dgl.NID].tolist()
 	print(sorted(layer_eid))
 	
 	blocks = []
@@ -497,7 +497,6 @@ def generate_blocks_for_one_layer(raw_graph, block_2_graph, batches_nid_list):
 
 
 	return blocks, src_list,dst_list,(connection_time, block_gen_time, mean_block_gen_time)
-
 
 
 

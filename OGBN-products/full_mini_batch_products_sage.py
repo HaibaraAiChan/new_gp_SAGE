@@ -126,6 +126,11 @@ def get_compute_num_nids(blocks):
 		res+=len(b.srcdata['_ID'])
 	return res
 
+def get_num_edges(blocks):
+	res=0
+	for b in blocks:
+		res+=b.num_edges()
+	return res
 	
 def get_FL_output_num_nids(blocks):
 	
@@ -190,6 +195,7 @@ def run(args, device, data):
 		optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 		for epoch in range(args.num_epochs):
 			num_src_node =0
+			num_edges = 0
 			num_out_node_FL=0
 			gen_block=0
 			tmp_t=0
@@ -197,40 +203,7 @@ def run(args, device, data):
 			if epoch >= args.log_indent:
 				t0 = time.time()
 			loss_sum=0
-			# start of data preprocessing part---s---------s--------s-------------s--------s------------s--------s----
-			# if args.load_full_batch:
-			# 	full_batch_dataloader=[]
-			# 	file_name=r'./../../../DATA/re/fan_out_'+args.fan_out+'/'+args.dataset+'_'+str(epoch)+'_items.pickle'
-			# 	with open(file_name, 'rb') as handle:
-			# 		item=pickle.load(handle)
-			# 		full_batch_dataloader.append(item)
-
-			# if args.GPUmem:
-			# 	see_memory_usage("----------------------------------------before generate dataloader block ")
 			
-			# block_dataloader, weights_list, time_collection = generate_dataloader_block(g, full_batch_dataloader, args)
-			# if args.GPUmem:
-			# 	see_memory_usage("-----------------------------------------after block dataloader generation ")
-
-
-			# from my_utils import intuitive_gp_first_layer_input_standard
-			# b_id_to_split = intuitive_gp_first_layer_input_standard(args, block_dataloader)
-
-
-			# connect_check_time, block_gen_time_total, batch_blocks_gen_time =time_collection
-			# print('connection checking time: ', connect_check_time)
-			# print('block generation total time ', block_gen_time_total)
-			# print('average batch blocks generation time: ', batch_blocks_gen_time)
-			# end of data preprocessing part------e---------e-------e----------e------e----------e--------e-------e--
-
-			# if epoch >= args.log_indent:
-			# 	gen_block=time.time() - t0
-			# 	time_block_gen.append(time.time() - t0)
-			# 	print('block dataloader generation time/epoch {}'.format(np.mean(time_block_gen)))
-			# 	tmp_t=time.time()
-			# Loop over the dataloader to sample the computation dependency graph as a list of blocks.
-			
-			# pseudo_mini_loss = torch.tensor([], dtype=torch.long)
 			data_loading_t=[]
 			block_to_t=[]
 			modeling_t=[]
@@ -245,8 +218,9 @@ def run(args, device, data):
 				print('step ', step)
 				# ttttt=time.time()
 				
-				# num_input_nids	+= len(input_nodes)
-				# num_src_node+=get_compute_num_nids(blocks)
+				num_input_nids	+= len(input_nodes)
+				num_src_node+=get_compute_num_nids(blocks)
+				num_edges += get_num_edges(blocks)
 				# num_out_node_FL+=get_FL_output_num_nids(blocks)
 				# print('pseudo mini batch '+str(step)+' input nodes size: '+str(len(input_nodes)) )
 				# ttttt2=time.time()
@@ -346,6 +320,7 @@ def run(args, device, data):
 			print('Number of nodes for computation during this epoch: ', num_src_node)
 			print('Number of first layer input nodes during this epoch: ', num_input_nids)
 			print('Number of first layer output nodes during this epoch: ', num_out_node_FL)
+			print('Number of all edges in block send to gpu during this epoch: ', num_edges)
 		if args.eval:
 			logger.print_statistics(run)
 
