@@ -279,7 +279,7 @@ def run(args, device, data):
 				modeling_t.append(tt4-tt3)
 
 				if args.GPUmem:
-					see_memory_usage("-----------------------------------------batch_pred = model(blocks, batch_inputs) ")
+					see_memory_usage("----------------------------------------- after batch_pred = model(blocks, batch_inputs) ")
 				tt61=time.time()
 				pseudo_mini_loss = loss_fcn(batch_pred, batch_labels)#------------*
 				# print('----------------------------------------------------------pseudo_mini_loss ', pseudo_mini_loss)

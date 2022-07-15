@@ -112,10 +112,12 @@ class SAGEConv(nn.Module):
 		msg_fn = fn.copy_src('h', 'm')
 		h_self = feat_dst
 		if self._aggre_type == 'mean':
+			see_memory_usage("----------------------------------------before mean aggregator")
 			graph.srcdata['h'] =  feat_src
 			graph.update_all(msg_fn, fn.mean('m', 'neigh'))
 			h_neigh = graph.dstdata['neigh']
 			h_neigh = self.fc_neigh(h_neigh)
+			see_memory_usage("----------------------------------------after mean aggregator-------")
 		# graph.srcdata['h'] = feat_src
 		# graph.update_all(fn.copy_src('h', 'm'), fn.mean('m', 'neigh'))
 		# h_neigh = graph.dstdata['neigh']
@@ -132,7 +134,9 @@ class SAGEConv(nn.Module):
 			h_neigh = self.fc_neigh(graph.dstdata['neigh'])
 			see_memory_usage("----------------------------------------after h_neigh = self.fc_neigh")
 
+		print(h_neigh.size())
 		rst = self.fc_self(h_self) + h_neigh
+		print(rst.size())
 		see_memory_usage("----------------------------------------after rst")
 		return rst
 
@@ -189,12 +193,6 @@ class GraphSAGE(nn.Module):
 			x = layer(block, x)
 			see_memory_usage("----------------------------------------after model layer "+str(i)+ ' x = layer(block, x)')
 			print(x.shape)
-			
-			# print("input nodes : "+str((blocks[-1].srcdata[dgl.NID])))
-			# print("output nodes : "+str((blocks[-1].dstdata[dgl.NID])))
-			# print("edges number: "+str((blocks[-1].edges())))
-			# print("dgl.NID: "+str(dgl.NID))
-			# print("dgl.EID: "+str((dgl.EID)))
 
 			x = self.activation(x)
 			see_memory_usage("----------------------------------------after model layer "+str(i)+ " x = self.activation(x)")
@@ -204,12 +202,14 @@ class GraphSAGE(nn.Module):
 			see_memory_usage("----------------------------------------after model layer "+str(i)+' x = self.dropout(x)')
 			# print(x.shape)
 
+		print("----------------input nodes number: "+str(len(blocks[-1].srcdata[dgl.NID])))
+		print("----------------output nodes number: "+str(len(blocks[-1].dstdata[dgl.NID])))
+		print("----------------edges number: "+str(len(blocks[-1].edges()[1])))
+
 		x = self.layers[-1](blocks[-1], x)
 		see_memory_usage("----------------------------------------end of model layers  after x = self.layers[-1](blocks[-1], x)")
 		print(x.shape)
-		print("input nodes number: "+str(len(blocks[-1].srcdata[dgl.NID])))
-		print("output nodes number: "+str(len(blocks[-1].dstdata[dgl.NID])))
-		print("edges number: "+str(len(blocks[-1].edges()[1])))
+		
 		# print("input nodes : "+str((blocks[-1].srcdata[dgl.NID])))
 		# print("output nodes : "+str((blocks[-1].dstdata[dgl.NID])))
 		# print("edges number: "+str((blocks[-1].edges())))
