@@ -114,10 +114,14 @@ class SAGEConv(nn.Module):
 		if self._aggre_type == 'mean':
 			see_memory_usage("----------------------------------------before mean aggregator")
 			graph.srcdata['h'] =  feat_src
+			see_memory_usage("----------------------------------------graph.srcdata['h'] =  feat_src-------")
 			graph.update_all(msg_fn, fn.mean('m', 'neigh'))
+			see_memory_usage("----------------------------------------graph.update_all(msg_fn, fn.mean('m', 'neigh'))-------")
 			h_neigh = graph.dstdata['neigh']
+			see_memory_usage("----------------------------------------h_neigh = graph.dstdata['neigh']-------")
 			h_neigh = self.fc_neigh(h_neigh)
-			see_memory_usage("----------------------------------------after mean aggregator-------")
+			see_memory_usage("----------------------------------------after mean aggregator-------h_neigh = self.fc_neigh(h_neigh)-")
+			print('h_neigh size', h_neigh.size())
 		# graph.srcdata['h'] = feat_src
 		# graph.update_all(fn.copy_src('h', 'm'), fn.mean('m', 'neigh'))
 		# h_neigh = graph.dstdata['neigh']
@@ -134,10 +138,11 @@ class SAGEConv(nn.Module):
 			h_neigh = self.fc_neigh(graph.dstdata['neigh'])
 			see_memory_usage("----------------------------------------after h_neigh = self.fc_neigh")
 
-		print(h_neigh.size())
+		print('h_self size ',h_self.size())
+		see_memory_usage("----------------------------------------before rst")
 		rst = self.fc_self(h_self) + h_neigh
 		print(rst.size())
-		see_memory_usage("----------------------------------------after rst")
+		see_memory_usage("----------------------------------------after rst (rst = self.fc_self(h_self) + h_neigh)")
 		return rst
 
 

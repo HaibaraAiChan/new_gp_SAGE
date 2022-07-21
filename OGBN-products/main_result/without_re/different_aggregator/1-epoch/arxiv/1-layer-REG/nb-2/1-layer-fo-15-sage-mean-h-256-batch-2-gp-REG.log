@@ -1,0 +1,298 @@
+main start at this time 1658034697.9944184
+-----------------------------------------before load data 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+ogbn-arxiv
+# Nodes: 169343
+# Edges: 2315598
+# Train: 90941
+# Val: 29799
+# Test: 48603
+# Classes: 40
+
+----------------------------------------start of run function 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+in feats:  128
+----------------------------------------before model to device 
+ Nvidia-smi: 0.1717529296875 GB
+    Memory Allocated: 0.0  GigaBytes
+Max Memory Allocated: 0.0  GigaBytes
+
+----------------------------------------after model to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 3.814697265625e-05  GigaBytes
+Max Memory Allocated: 3.814697265625e-05  GigaBytes
+
+----------------------------------------before generate dataloader block 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 3.814697265625e-05  GigaBytes
+Max Memory Allocated: 3.814697265625e-05  GigaBytes
+
+The real block id is  0
+get_global_graph_edges_ids_block function  spend 0.02859187126159668
+global_2_local spend time (sec) 0.03381156921386719
+----------------------------  graph partition start---------------------
+g = dgl.graph((u,v))  spent  0.0037724971771240234
+the counter of in-degree current block !!!!!!!!!!!!!!_______________!!!!!!!!!!
+Counter({0: 59149, 15: 17798, 1: 13428, 2: 11706, 3: 9277, 4: 7320, 5: 6222, 6: 4868, 7: 4045, 8: 3472, 9: 2976, 10: 2599, 11: 2203, 12: 1937, 13: 1656, 14: 1434})
+
+A = g.adjacency_matrix() spent  0.011158943176269531
+auxiliary_graph
+Graph(num_nodes=150090, num_edges=20944515,
+      ndata_schemes={}
+      edata_schemes={'w': Scheme(shape=(), dtype=torch.float32)})
+get remove nodes spent  0.07591915130615234
+remove nodes length  59149
+
+auxiliary_graph.remove_nodes spent  1.0138320922851562
+after remove non output nodes the auxiliary_graph
+Graph(num_nodes=90941, num_edges=20944515,
+      ndata_schemes={}
+      edata_schemes={'w': Scheme(shape=(), dtype=torch.float32)})
+auxiliary_graph_no_diag generation spent  0.8565213680267334
+
+the counter of shared neighbor distribution
+Counter({1.0: 17917088, 2.0: 2320590, 3.0: 449462, 4.0: 109392, 5.0: 34118, 6.0: 13310, 7.0: 5248, 8.0: 2644, 9.0: 1060, 10.0: 432, 11.0: 156, 12.0: 56, 13.0: 14, 14.0: 4})
+20853574
+Convert a graph into a bidirected graph: 0.849 seconds
+Metis partitioning: 3.245 seconds
+Split the graph: 2.526 seconds
+Construct subgraphs: 0.029 seconds
+auxiliary_graph_no_diag dgl.metis_partition spent  6.658868074417114
+46419
+44522
+total k batches seeds list generation spend  11.484061002731323
+after graph partition
+graph partition algorithm spend time 11.556795358657837
+46419
+44522
+partition_len_list
+[71541, 97148]
+REG selection method  spend 11.637202024459839
+time for parepare:  0.01597905158996582
+local_output_nid generation:  0.0071258544921875
+local_in_edges_tensor generation:  0.005917072296142578
+mini_batch_src_global generation:  0.010238409042358398
+r_  generation:  0.10927343368530273
+local_output_nid generation:  0.005591392517089844
+local_in_edges_tensor generation:  0.008012533187866211
+mini_batch_src_global generation:  0.012547016143798828
+r_  generation:  0.12074112892150879
+----------------------check_connections_block total spend ----------------------------- 0.3480055332183838
+generate_one_block  0.1425924301147461
+generate_one_block  0.14911842346191406
+----------===============-------------===============-------------the number of batches *****---- 2
+
+original number of batches:  2
+re graph partition time:  0
+
+-----------------------------------------after block dataloader generation 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 3.814697265625e-05  GigaBytes
+Max Memory Allocated: 3.814697265625e-05  GigaBytes
+
+connection checking time:  0.3480055332183838
+block generation total time  0.29171085357666016
+average batch blocks generation time:  0.14585542678833008
+block dataloader generation time/epoch 12.345007419586182
+pseudo mini batch 0 input nodes size: 71541
+----------------------------------------before load block subtensor 
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 3.814697265625e-05  GigaBytes
+Max Memory Allocated: 3.814697265625e-05  GigaBytes
+
+----------------------------------------before batch input features to device
+ Nvidia-smi: 1.0174560546875 GB
+    Memory Allocated: 3.814697265625e-05  GigaBytes
+Max Memory Allocated: 3.814697265625e-05  GigaBytes
+
+----------------------------------------after batch input features to device
+ Nvidia-smi: 1.0526123046875 GB
+    Memory Allocated: 0.034151554107666016  GigaBytes
+Max Memory Allocated: 0.034151554107666016  GigaBytes
+
+----------------------------------------after  batch labels to device
+ Nvidia-smi: 1.0526123046875 GB
+    Memory Allocated: 0.034497737884521484  GigaBytes
+Max Memory Allocated: 0.034497737884521484  GigaBytes
+
+----------------------------------------after load block subtensor  
+ Nvidia-smi: 1.0526123046875 GB
+    Memory Allocated: 0.034497737884521484  GigaBytes
+Max Memory Allocated: 0.034497737884521484  GigaBytes
+
+----------------------------------------after blocks to device 
+ Nvidia-smi: 1.1365966796875 GB
+    Memory Allocated: 0.03675985336303711  GigaBytes
+Max Memory Allocated: 0.03675985336303711  GigaBytes
+
+----------------------------------------before batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 1.1365966796875 GB
+    Memory Allocated: 0.03675985336303711  GigaBytes
+Max Memory Allocated: 0.03675985336303711  GigaBytes
+
+----------------input nodes number: 71541
+----------------output nodes number: 46419
+----------------edges number: 303535
+----------------------------------------before mean aggregator
+ Nvidia-smi: 1.1365966796875 GB
+    Memory Allocated: 0.03763914108276367  GigaBytes
+Max Memory Allocated: 0.038770198822021484  GigaBytes
+
+----------------------------------------after mean aggregator-------
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.06929779052734375  GigaBytes
+Max Memory Allocated: 0.08468818664550781  GigaBytes
+
+h_neigh size torch.Size([46419, 40])
+torch.Size([46419, 40])
+torch.Size([46419, 40])
+----------------------------------------after rst
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.07621479034423828  GigaBytes
+Max Memory Allocated: 0.08468818664550781  GigaBytes
+
+----------------------------------------end of model layers  after x = self.layers[-1](blocks[-1], x)
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.06929779052734375  GigaBytes
+Max Memory Allocated: 0.08468818664550781  GigaBytes
+
+torch.Size([46419, 40])
+----------------------------------------- after batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.07621479034423828  GigaBytes
+Max Memory Allocated: 0.08468818664550781  GigaBytes
+
+-----------------------------------------after loss calculation
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.08313274383544922  GigaBytes
+Max Memory Allocated: 0.08468818664550781  GigaBytes
+
+-----------------------------------------after loss backward
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.04720258712768555  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+pseudo mini batch 1 input nodes size: 97148
+----------------------------------------before load block subtensor 
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.04145383834838867  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------before batch input features to device
+ Nvidia-smi: 1.3729248046875 GB
+    Memory Allocated: 0.04145383834838867  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------after batch input features to device
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.08832883834838867  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------after  batch labels to device
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.08866071701049805  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------after load block subtensor  
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.05420112609863281  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------after blocks to device 
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.05655384063720703  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------before batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.05655384063720703  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------input nodes number: 97148
+----------------output nodes number: 44522
+----------------edges number: 315650
+----------------------------------------before mean aggregator
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.05760955810546875  GigaBytes
+Max Memory Allocated: 0.09696674346923828  GigaBytes
+
+----------------------------------------after mean aggregator-------
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.08799266815185547  GigaBytes
+Max Memory Allocated: 0.1027536392211914  GigaBytes
+
+h_neigh size torch.Size([44522, 40])
+torch.Size([44522, 40])
+torch.Size([44522, 40])
+----------------------------------------after rst
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.09528446197509766  GigaBytes
+Max Memory Allocated: 0.1027536392211914  GigaBytes
+
+----------------------------------------end of model layers  after x = self.layers[-1](blocks[-1], x)
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.08864974975585938  GigaBytes
+Max Memory Allocated: 0.1027536392211914  GigaBytes
+
+torch.Size([44522, 40])
+----------------------------------------- after batch_pred = model(blocks, batch_inputs) 
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.08836746215820312  GigaBytes
+Max Memory Allocated: 0.1027536392211914  GigaBytes
+
+-----------------------------------------after loss calculation
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.09500265121459961  GigaBytes
+Max Memory Allocated: 0.1027536392211914  GigaBytes
+
+-----------------------------------------after loss backward
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.059845924377441406  GigaBytes
+Max Memory Allocated: 0.10827207565307617  GigaBytes
+
+-----------------------------------------after optimizer step
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.059922218322753906  GigaBytes
+Max Memory Allocated: 0.10827207565307617  GigaBytes
+
+-----------------------------------------after optimizer zero grad
+ Nvidia-smi: 1.4197998046875 GB
+    Memory Allocated: 0.059922218322753906  GigaBytes
+Max Memory Allocated: 0.10827207565307617  GigaBytes
+
+times | data loading | block to device | model prediction | loss calculation | loss backward |  optimizer step |
+      |0.021263718605041504 |0.1635533571243286 |0.37803196907043457 |0.00023448467254638672 |0.0021610260009765625 |0.001155853271484375 |
+----------------------------------------------------------pseudo_mini_loss sum 3.856860637664795
+Total (block generation + training)time/epoch 13.484039783477783
+Training time/epoch 1.1383686065673828
+Training time without block to device /epoch 0.8112618923187256
+Training time without total dataloading part /epoch 0.7620108127593994
+load block tensor time/epoch 0.04252743721008301
+block to device time/epoch 0.3271067142486572
+input features size transfer per epoch 2.682209014892578e-07
+blocks size to device per epoch 1.7881393432617188e-07
+ Run 0| Epoch 0 |
+Number of nodes for computation during this epoch:  168689
+Number of first layer input nodes during this epoch:  168689
+Number of first layer output nodes during this epoch:  90941
+GraphSAGE(
+  (layers): ModuleList(
+    (0): SAGEConv(
+      (fc_self): Linear(in_features=128, out_features=40, bias=False)
+      (fc_neigh): Linear(in_features=128, out_features=40, bias=False)
+    )
+  )
+  (dropout): Dropout(p=0.5, inplace=False)
+)
+total model parameters size  10240
+trainable parameters
+layers.0.fc_self.weight, torch.Size([40, 128])
+layers.0.fc_neigh.weight, torch.Size([40, 128])
+----------------------------------------
+un-trainable parameters
