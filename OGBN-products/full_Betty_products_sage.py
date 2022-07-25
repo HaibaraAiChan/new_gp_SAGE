@@ -141,6 +141,9 @@ def run(args, device, data):
 	in_feats = len(nfeats[0])
 	print('in feats: ', in_feats)
 	nvidia_smi_list=[]
+	# print('the mode of the raw graph')
+	# print(torch.mode(g.in_degrees()))
+	# return
 	# draw_nx_graph(g)
 	# gen_pyvis_graph_global(g,train_nid)
 	if args.selection_method =='metis':

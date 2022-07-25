@@ -26,13 +26,13 @@ re_partition_method=random
 
 
 layersList=(1)
-# fan_out_list=(1 5 6 7 8 9 10 11 12 13 15 20 25 30 40 50 100 150 200 400 800)
-fan_out_list=(2 3 4 )
+fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 13 15 20 25 30 40 50 100 150 200 400 800)
+# fan_out_list=(2 3 4 )
 hiddenList=(256)
-AggreList=(mean)
-
-savePath=./main_result/without_re/different_aggregator/1-epoch/arxiv/1-layer-REG/
-# savePath=./main_result/without_re/different_aggregator/1-epoch/products/1-layer-REG/
+AggreList=(pool)
+aggre=pool
+savePath=./main_result/without_re/different_aggregator/${aggre}/1-epoch/arxiv/1-layer-REG/
+# savePath=./main_result/without_re/different_aggregator/${aggre}/1-epoch/products/1-layer-REG/
 
 for Aggre in ${AggreList[@]}
 do      

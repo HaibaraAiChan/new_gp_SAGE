@@ -409,12 +409,18 @@ def load_karate():
 	print('karate data')
 	print(g.ndata)
 	print(g.edata)
+
+	
 	ndata=[]
 	for nid in range(7):
 		ndata.append((th.ones(4)*nid).tolist())
 	ddd = {'feat': th.tensor(ndata)}
 	g.ndata['label']=torch.tensor([0,1,0,1,0,1,1])
 	g.ndata['feat'] = ddd['feat']
+	print(g)
+
+	
+
 	# print(data[0].ndata)
 	# g.ndata['labels'] = g.ndata['label']
 	train_nid = th.tensor(range(0,4))

@@ -126,9 +126,19 @@ class SAGEConv(nn.Module):
 		# graph.update_all(fn.copy_src('h', 'm'), fn.mean('m', 'neigh'))
 		# h_neigh = graph.dstdata['neigh']
 		elif self._aggre_type == 'pool':
-			graph.srcdata['h'] = F.relu(self.fc_pool(feat_src))
+			see_memory_usage("----------------------------------------start pool aggregator-------")
+			tmp = self.fc_pool(feat_src)
+			see_memory_usage("----------------------------------------self.fc_pool(feat_src)")
+			tmp2 = F.relu(tmp)
+			see_memory_usage("----------------------------------------F.relu(tmp)")
+			graph.srcdata['h'] = tmp2
+			see_memory_usage("----------------------------------------graph.srcdata['h'] = tmp2")
+			# graph.srcdata['h'] = F.relu(self.fc_pool(feat_src))
+			# see_memory_usage("----------------------------------------graph.srcdata['h'] = F.relu(self.fc_pool(feat_src)")
 			graph.update_all(msg_fn, fn.max('m', 'neigh'))
+			see_memory_usage("----------------------------------------graph.update_all(msg_fn, fn.max('m', 'neigh'))")
 			h_neigh = self.fc_neigh(graph.dstdata['neigh'])
+			see_memory_usage("----------------------------------------h_neigh = self.fc_neigh(graph.dstdata['neigh'])")
 		elif self._aggre_type == 'lstm':
 			graph.srcdata['h'] = feat_src
 			see_memory_usage("----------------------------------------before graph.update_all(msg_fn, self._lstm_reducer)")
