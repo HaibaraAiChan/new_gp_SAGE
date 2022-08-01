@@ -384,9 +384,9 @@ def main():
 	argparser.add_argument('--aggre', type=str, default='mean')
 	# argparser.add_argument('--selection-method', type=str, default='range')
 	# argparser.add_argument('--selection-method', type=str, default='random')
-	argparser.add_argument('--selection-method', type=str, default='metis')
-	# argparser.add_argument('--selection-method', type=str, default='REG')
-	argparser.add_argument('--num-batch', type=int, default=1)
+	# argparser.add_argument('--selection-method', type=str, default='metis')
+	argparser.add_argument('--selection-method', type=str, default='REG')
+	argparser.add_argument('--num-batch', type=int, default=2)
 
 	argparser.add_argument('--re-partition-method', type=str, default='REG')
 	# argparser.add_argument('--re-partition-method', type=str, default='random')

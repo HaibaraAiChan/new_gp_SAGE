@@ -150,7 +150,7 @@ def generate_one_block(raw_graph, global_eids, global_srcnid, global_dstnid):
 	return new_block
 
 def check_connections_block(batched_nodes_list, current_layer_block):
-	str_=''
+	
 	res=[]
 	induced_src = current_layer_block.srcdata[dgl.NID]
 
@@ -160,7 +160,7 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 	src_nid_list = induced_src.tolist()
 
 	dict_nid_2_local = {src_nid_list[i]: i for i in range(0, len(src_nid_list))}
-	str_+= 'time for parepare: '+str(time.time()-t1)+'\n'
+	print('time for parepare: ', time.time()-t1)
 
 	for step, output_nid in enumerate(batched_nodes_list):
 		# in current layer subgraph, only has src and dst nodes,
@@ -168,19 +168,19 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 		tt=time.time()
 		local_output_nid = list(map(dict_nid_2_local.get, output_nid))
 
-		str_+= 'local_output_nid generation: '+ str(time.time()-tt)+'\n'
+		print('local_output_nid generation: ', time.time()-tt)
 		tt1=time.time()
 
 		local_in_edges_tensor = current_layer_block.in_edges(local_output_nid, form='all')
 
-		str_+= 'local_in_edges_tensor generation: '+str(time.time()-tt1)+'\n'
+		print('local_in_edges_tensor generation: ', time.time()-tt1)
 		tt2=time.time()
 		# return (𝑈,𝑉,𝐸𝐼𝐷)
 		# get local srcnid and dstnid from subgraph
 		mini_batch_src_local= list(local_in_edges_tensor)[0] # local (𝑈,𝑉,𝐸𝐼𝐷);
 		mini_batch_src_global= induced_src[mini_batch_src_local].tolist() # map local src nid to global.
 
-		str_+= 'mini_batch_src_global generation: '+str( time.time()-tt2) +'\n'
+		print('mini_batch_src_global generation: ', time.time()-tt2)
 		tt3=time.time()
 
 		mini_batch_dst_local= list(local_in_edges_tensor)[1]
@@ -196,7 +196,7 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 		list(map(c.__delitem__, filter(c.__contains__,output_nid)))
 		r_=list(c.keys())
 
-		str_+= 'r_  generation: '+ str(time.time()-ttp)+'\n'
+		print('r_  generation: ', time.time()-ttp)
 		
 		
 		# add_src=[i for i in mini_batch_src_global if i not in output_nid] 
@@ -207,37 +207,7 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 		output_nid = torch.tensor(output_nid, dtype=torch.long)
 
 		res.append((src_nid, output_nid, global_eid_tensor, local_output_nid))
-		print(str_)
-	return res
 
-def check_connections_block_clear(batched_nodes_list, current_layer_block):
-	res=[]
-	induced_src = current_layer_block.srcdata[dgl.NID]
-	eids_global = current_layer_block.edata['_ID']
-	src_nid_list = induced_src.tolist()
-	dict_nid_2_local = {src_nid_list[i]: i for i in range(0, len(src_nid_list))}
-	
-	for step, output_nid in enumerate(batched_nodes_list):
-		# in current layer subgraph, only has src and dst nodes,
-		local_output_nid = list(map(dict_nid_2_local.get, output_nid))
-		local_in_edges_tensor = current_layer_block.in_edges(local_output_nid, form='all')
-		# return (𝑈,𝑉,𝐸𝐼𝐷)
-		# get local srcnid and dstnid from subgraph
-		mini_batch_src_local= list(local_in_edges_tensor)[0] # local (𝑈,𝑉,𝐸𝐼𝐷);
-		mini_batch_src_global= induced_src[mini_batch_src_local].tolist() # map local src nid to global.
-		mini_batch_dst_local= list(local_in_edges_tensor)[1]
-		if set(mini_batch_dst_local.tolist()) != set(local_output_nid):
-			print('local dst not match')
-		eid_local_list = list(local_in_edges_tensor)[2] # local (𝑈,𝑉,𝐸𝐼𝐷); 
-		global_eid_tensor = eids_global[eid_local_list] # map local eid to global.
-		# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-		c=OrderedCounter(mini_batch_src_global)
-		list(map(c.__delitem__, filter(c.__contains__,output_nid)))
-		r_=list(c.keys())
-		# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-		src_nid = torch.tensor(output_nid + r_, dtype=torch.long)
-		output_nid = torch.tensor(output_nid, dtype=torch.long)
-		res.append((src_nid, output_nid, global_eid_tensor, local_output_nid))
 	return res
 
 def generate_blocks_for_one_layer_block(raw_graph, layer_block, batches_nid_list):

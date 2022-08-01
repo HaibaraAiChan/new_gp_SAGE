@@ -144,9 +144,10 @@ def run(args, device, data):
 	v = g.edges()[1].tolist()
 	merged_list = tuple(zip(u, v))
 	G.add_edges_from(merged_list)
-	print(G)
-	cc_ = nx.clustering(G)
-	print('the clustering coefficient: ', cc_)
+	# print(G)
+	print(len(merged_list))
+	# cc_ = nx.clustering(G)
+	# print('the clustering coefficient: ', cc_)
 	cc = nx.average_clustering(G)
 	print('the avg clustering coefficient: ', cc)
 

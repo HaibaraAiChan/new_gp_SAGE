@@ -4,6 +4,10 @@
 File=full_Betty_products_sage.py
 Data=ogbn-products
 Data=ogbn-arxiv
+Data=cora
+# Data=pubmed
+# Data=reddit
+
 model=sage
 seed=1236 
 setseed=True
@@ -26,12 +30,16 @@ re_partition_method=random
 
 
 layersList=(1)
-fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 13 15 20 25 30 40 50 100 150 200 400 800)
+# fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 13 15 20 25 30 40 50 100 150 200 400 800)
+fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 15 20 30 50 100 )
+# fan_out_list=(1 2 3 4 5 10 50 100 200 300 400 500 800)
 # fan_out_list=(2 3 4 )
 hiddenList=(256)
 AggreList=(pool)
 aggre=pool
-savePath=./main_result/without_re/different_aggregator/${aggre}/1-epoch/arxiv/1-layer-REG/
+# AggreList=(mean)
+# aggre=mean
+savePath=./main_result/without_re/different_aggregator/${aggre}/1-epoch/${Data}/1-layer-REG/
 # savePath=./main_result/without_re/different_aggregator/${aggre}/1-epoch/products/1-layer-REG/
 
 for Aggre in ${AggreList[@]}
