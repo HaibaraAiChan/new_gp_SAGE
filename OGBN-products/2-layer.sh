@@ -2,6 +2,7 @@
 
 
 File=full_Betty_products_sage.py
+# File=loading_data.py
 Data=ogbn-products
 # Data=ogbn-arxiv
 model=sage
@@ -13,10 +14,10 @@ lr=0.01
 dropout=0.5
 
 run=1
-epoch=1
-logIndent=0
+epoch=5
+logIndent=2
 
-num_batch=(1)
+num_batch=(2 4 8 16 32 64)
 
 pMethodList=(REG)
 
@@ -26,16 +27,15 @@ re_partition_method=random
 
 
 layersList=(2)
-# fan_out_list=(5 6 7 8 9 11 12 13 15 20 30 40 50 100 150 200 400 800)
-fan_out_list=(10,15)
-# hiddenList=(16 32)
-hiddenList=(64 128 256 512 1024)
+fan_out_list=(10,25)
+
+hiddenList=(256)
 AggreList=(mean)
 
 # savePath=./main_result/without_re/different_aggregator/1-epoch/arxiv/1-layer-REG/
 # savePath=./main_result/without_re/different_aggregator/1-epoch/products/1-layer-REG/
-savePath=./main_result/without_re/different_aggregator/1-epoch/products/2-layer-REG/
-
+# savePath=./main_result/without_re/different_aggregator/1-epoch/products/2-layer-REG/
+savePath=./dataloader_clean_folder/Betty-wo-duplicated/
 for Aggre in ${AggreList[@]}
 do      
 	

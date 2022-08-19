@@ -11,18 +11,13 @@ from itertools import islice
 from statistics import mean
 from multiprocessing import Manager, Pool
 from multiprocessing import Process, Value, Array
-# from graphPartitioner import GraphPatitioner
 
 from graph_partitioner_new import Graph_Partitioner
 from draw_graph import draw_dataloader_blocks_pyvis
 
-# from draw_nx import draw_nx_graph
-
 from my_utils import gen_batch_output_list
-
 from memory_usage import see_memory_usage
 
-# from draw_nx import draw_nx_graph
 from sortedcontainers import SortedList, SortedSet, SortedDict
 from multiprocessing import Process, Queue
 from collections import Counter, OrderedDict
@@ -37,52 +32,12 @@ class OrderedCounter(Counter, OrderedDict):
 	def __reduce__(self):
 		return self.__class__, (OrderedDict(self),)
 #------------------------------------------------------------------------
-def unique_tensor_item(combined):
-	uniques, counts = combined.unique(return_counts=True)
-	return uniques.type(torch.long)
+# def unique_tensor_item(combined):
+# 	uniques, counts = combined.unique(return_counts=True)
+# 	return uniques.type(torch.long)
 
 
-# def unique_edges(edges_list):
-# 	temp = []
-# 	for i in range(len(edges_list)):
-# 		tt = edges_list[i]  # tt : [[],[]]
-# 		for j in range(len(tt[0])):
-# 			cur = (tt[0][j], tt[1][j])
-# 			if cur not in temp:
-# 				temp.append(cur)
-# 	# print(temp)   # [(),(),()...]
-# 	res_ = list(map(list, zip(*temp)))  # [],[]
-# 	res = tuple(sub for sub in res_)
-# 	return res
 
-
-def generate_random_mini_batch_seeds_list(OUTPUT_NID, args):
-	'''
-	Parameters
-	----------
-	OUTPUT_NID: final layer output nodes id (tensor)
-	args : all given parameters collection
-
-	Returns
-	-------
-	'''
-	selection_method = args.selection_method
-	mini_batch = args.batch_size
-	full_len = len(OUTPUT_NID)  # get the total number of output nodes
-	if selection_method == 'random':
-		indices = torch.randperm(full_len)  # get a permutation of the index of output nid tensor (permutation of 0~n-1)
-	else: #selection_method == 'range'
-		indices = torch.tensor(range(full_len))
-
-	output_num = len(OUTPUT_NID.tolist())
-	map_output_list = list(numpy.array(OUTPUT_NID)[indices.tolist()])
-	batches_nid_list = [map_output_list[i:i + mini_batch] for i in range(0, len(map_output_list), mini_batch)]
-	weights_list = []
-	for i in batches_nid_list:
-		temp = len(i)/output_num
-		weights_list.append(len(i)/output_num)
-		
-	return batches_nid_list, weights_list
 
 def get_global_graph_edges_ids_block(raw_graph, block):
 	
@@ -106,28 +61,7 @@ def get_global_graph_edges_ids_block(raw_graph, block):
 
 
 
-
-def get_global_graph_edges_ids(raw_graph, cur_block):
-	'''
-		Parameters
-		----------
-		raw_graph : graph
-		cur_block: (local nids, local nids): (tensor,tensor)
-
-		Returns
-		-------
-		global_graph_edges_ids: []                    current block edges global id list
-	'''
-	src, dst = cur_block.all_edges(order='eid')
-	src = src.long()
-	dst = dst.long()
-	raw_src, raw_dst = cur_block.srcdata[dgl.NID][src], cur_block.dstdata[dgl.NID][dst]
-	global_graph_eids_raw = raw_graph.edge_ids(raw_src, raw_dst)
-	# https://docs.dgl.ai/en/0.4.x/generated/dgl.DGLGraph.edge_ids.html#dgl.DGLGraph.edge_ids
-	return global_graph_eids_raw, (raw_src, raw_dst)
-
-
-def generate_one_block(raw_graph, global_eids, global_srcnid, global_dstnid):
+def generate_one_block(raw_graph, global_srcnid, global_dstnid, global_eids):
 	'''
 
 	Parameters
@@ -139,9 +73,10 @@ def generate_one_block(raw_graph, global_eids, global_srcnid, global_dstnid):
 	-------
 
 	'''
-	_graph = dgl.edge_subgraph(raw_graph, global_eids,store_ids=True)
+	_graph = dgl.edge_subgraph(raw_graph, global_eids, store_ids=True)
 	edge_dst_list = _graph.edges(order='eid')[1].tolist()
 	dst_local_nid_list=list(OrderedCounter(edge_dst_list).keys())
+	
 	new_block = dgl.to_block(_graph, dst_nodes=torch.tensor(dst_local_nid_list, dtype=torch.long))
 	new_block.srcdata[dgl.NID] = global_srcnid
 	new_block.dstdata[dgl.NID] = global_dstnid
@@ -149,18 +84,61 @@ def generate_one_block(raw_graph, global_eids, global_srcnid, global_dstnid):
 
 	return new_block
 
+
+def func(output_nid, current_layer_block, dict_nid_2_local ):
+	# print("in:", msg)
+	# time.sleep(3)
+	print("start to do =======")
+	local_output_nid = list(map(dict_nid_2_local.get, output_nid))
+	print("start to do 2=======")
+	local_in_edges_tensor = current_layer_block.in_edges(local_output_nid, form='all')
+	print("start to do 3=======")
+	mini_batch_src_local= list(local_in_edges_tensor)[0] # local (𝑈,𝑉,𝐸𝐼𝐷);
+	print("start to do 4=======")
+	mini_batch_src_global= induced_src[mini_batch_src_local].tolist() # map local src nid to global.
+	print("start to do 5=======")
+	mini_batch_dst_local= list(local_in_edges_tensor)[1]
+	if set(mini_batch_dst_local.tolist()) != set(local_output_nid):
+		print('local dst not match')
+	eid_local_list = list(local_in_edges_tensor)[2] # local (𝑈,𝑉,𝐸𝐼𝐷); 
+	global_eid_tensor = eids_global[eid_local_list] # map local eid to global.
+	# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	mini_batch_src_global = list(OrderedDict.fromkeys(mini_batch_src_global))
+	c=OrderedCounter(mini_batch_src_global)
+	list(map(c.__delitem__, filter(c.__contains__,output_nid)))
+	r_=list(c.keys())
+	# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+	src_nid = torch.tensor(output_nid + r_, dtype=torch.long)
+	output_nid = torch.tensor(output_nid, dtype=torch.long)
+	
+	return (src_nid, output_nid, global_eid_tensor)
+
+def log_result(src, output, eid):
+	print(len(src))
+	print(len(output))
+	print(len(eid))
+	print("Succesfully get callback! With result: ")
+
+
 def check_connections_block(batched_nodes_list, current_layer_block):
 	str_=''
 	res=[]
+	print('check_connections_block*********************************')
+
+	# adj_tensor = current_layer_block.adj_sparse('coo')
+	# print('adj tensor')
+	# print(adj_tensor)
+	# print()
+
 	induced_src = current_layer_block.srcdata[dgl.NID]
 
 	eids_global = current_layer_block.edata['_ID']
 
 	t1=time.time()
 	src_nid_list = induced_src.tolist()
+	dict_nid_2_local = dict(zip(src_nid_list, range(len(src_nid_list)))) # speedup 
+	str_+= 'time for parepare 1: '+str(time.time()-t1)+'\n'
 
-	dict_nid_2_local = {src_nid_list[i]: i for i in range(0, len(src_nid_list))}
-	str_+= 'time for parepare: '+str(time.time()-t1)+'\n'
 
 	for step, output_nid in enumerate(batched_nodes_list):
 		# in current layer subgraph, only has src and dst nodes,
@@ -184,67 +162,36 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 		tt3=time.time()
 
 		mini_batch_dst_local= list(local_in_edges_tensor)[1]
-		# mini_batch_dst_global= induced_src[mini_batch_dst_local].tolist()
+		
 		if set(mini_batch_dst_local.tolist()) != set(local_output_nid):
 			print('local dst not match')
 		eid_local_list = list(local_in_edges_tensor)[2] # local (𝑈,𝑉,𝐸𝐼𝐷); 
 		global_eid_tensor = eids_global[eid_local_list] # map local eid to global.
-		# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-		ttp=time.time()
+	# 	# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+		str_+= "\n&&&&&&&&&&&&&&& before remove duplicate length: "+ str(len(mini_batch_src_global))+'\n'
+		# ttp=time.time()
+
+		# mini_batch_src_global = list(OrderedDict.fromkeys(mini_batch_src_global))
+		# str_+= "&&&&&&&&&&&&&&& after remove duplicate length: "+ str(len(mini_batch_src_global)) +'\n\n'
+		ttp1=time.time()
 
 		c=OrderedCounter(mini_batch_src_global)
 		list(map(c.__delitem__, filter(c.__contains__,output_nid)))
 		r_=list(c.keys())
-
-		str_+= 'r_  generation: '+ str(time.time()-ttp)+'\n'
-		
-		
-		# add_src=[i for i in mini_batch_src_global if i not in output_nid] 
-		# r_ =remove_duplicate(add_src)
-		# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-		
-		src_nid = torch.tensor(output_nid + r_, dtype=torch.long)
-		output_nid = torch.tensor(output_nid, dtype=torch.long)
-
-		res.append((src_nid, output_nid, global_eid_tensor, local_output_nid))
-		print(str_)
-	return res
-
-def check_connections_block_clear(batched_nodes_list, current_layer_block):
-	res=[]
-	induced_src = current_layer_block.srcdata[dgl.NID]
-	eids_global = current_layer_block.edata['_ID']
-	src_nid_list = induced_src.tolist()
-	dict_nid_2_local = {src_nid_list[i]: i for i in range(0, len(src_nid_list))}
+		# 	# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+		# str_+= 'remove duplicate: '+ str(ttp1-ttp)+'\n'
+		str_+= 'r_  generation: '+ str(time.time()-ttp1)+'\n\n'
 	
-	for step, output_nid in enumerate(batched_nodes_list):
-		# in current layer subgraph, only has src and dst nodes,
-		local_output_nid = list(map(dict_nid_2_local.get, output_nid))
-		local_in_edges_tensor = current_layer_block.in_edges(local_output_nid, form='all')
-		# return (𝑈,𝑉,𝐸𝐼𝐷)
-		# get local srcnid and dstnid from subgraph
-		mini_batch_src_local= list(local_in_edges_tensor)[0] # local (𝑈,𝑉,𝐸𝐼𝐷);
-		mini_batch_src_global= induced_src[mini_batch_src_local].tolist() # map local src nid to global.
-		mini_batch_dst_local= list(local_in_edges_tensor)[1]
-		if set(mini_batch_dst_local.tolist()) != set(local_output_nid):
-			print('local dst not match')
-		eid_local_list = list(local_in_edges_tensor)[2] # local (𝑈,𝑉,𝐸𝐼𝐷); 
-		global_eid_tensor = eids_global[eid_local_list] # map local eid to global.
-		# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-		c=OrderedCounter(mini_batch_src_global)
-		list(map(c.__delitem__, filter(c.__contains__,output_nid)))
-		r_=list(c.keys())
-		# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 		src_nid = torch.tensor(output_nid + r_, dtype=torch.long)
 		output_nid = torch.tensor(output_nid, dtype=torch.long)
-		res.append((src_nid, output_nid, global_eid_tensor, local_output_nid))
+
+		res.append((src_nid, output_nid, global_eid_tensor))
+	print(str_)
 	return res
+
+
 
 def generate_blocks_for_one_layer_block(raw_graph, layer_block, batches_nid_list):
-	# see_memory_usage("------------------------------- before        generate_blocks_for_one_layer_block ")
-	
-	# layer_eid = layer_block.edata[dgl.NID].tolist() # we have changed it to global eid
-	# print(sorted(layer_eid))
 	
 	blocks = []
 	check_connection_time = []
@@ -252,33 +199,19 @@ def generate_blocks_for_one_layer_block(raw_graph, layer_block, batches_nid_list
 
 	t1= time.time()
 	batches_temp_res_list = check_connections_block(batches_nid_list, layer_block)
-	# return
 	t2 = time.time()
-	check_connection_time.append(t2-t1) #------------------------------------------
-	print('----------------------check_connections_block total spend -----------------------------', t2-t1)
+	check_connection_time.append(t2-t1)
+
 	src_list=[]
 	dst_list=[]
-
-	# see_memory_usage("------------------------------- before     for loop    batches_temp_res_list ")
-	for step, (srcnid, dstnid, current_block_global_eid, local_dstnid) in enumerate(batches_temp_res_list):
-	# for step, (srcnid, dstnid, current_block_global_eid, src_e, dst_e) in enumerate(batches_temp_res_list):
-		# print('batch ' + str(step) + '-' * 30)
-		t_ = time.time()
-
-		cur_block = generate_one_block(raw_graph, current_block_global_eid, srcnid, dstnid)
-
-		t__=time.time()
-		block_generation_time.append(t__-t_)  #------------------------------------------
-		print('generate_one_block ', t__-t_)
-		#----------------------------------------------------
-		induced_src = cur_block.srcdata[dgl.NID]
 	
-		e_src_local, e_dst_local = cur_block.edges(order='eid')
-		e_src, e_dst = induced_src[e_src_local], induced_src[e_dst_local]
-		e_src = e_src.detach().numpy().astype(int)
-		e_dst = e_dst.detach().numpy().astype(int)
 
-		#----------------------------------------------------
+	for step, (srcnid, dstnid, current_block_global_eid) in enumerate(batches_temp_res_list):
+		t_ = time.time()
+		cur_block = generate_one_block(raw_graph, srcnid, dstnid, current_block_global_eid) # block -------
+		t__=time.time()
+		block_generation_time.append(t__-t_) 
+
 		blocks.append(cur_block)
 		src_list.append(srcnid)
 		dst_list.append(dstnid)
@@ -287,6 +220,57 @@ def generate_blocks_for_one_layer_block(raw_graph, layer_block, batches_nid_list
 	block_gen_time = sum(block_generation_time)
 
 	return blocks, src_list, dst_list, (connection_time, block_gen_time)
+
+
+
+
+
+# def generate_blocks_for_one_layer_block_bak(raw_graph, layer_block, batches_nid_list):
+# 	# see_memory_usage("------------------------------- before        generate_blocks_for_one_layer_block ")
+	
+# 	# layer_eid = layer_block.edata[dgl.NID].tolist() # we have changed it to global eid
+# 	# print(sorted(layer_eid))
+	
+# 	blocks = []
+# 	check_connection_time = []
+# 	block_generation_time = []
+
+# 	t1= time.time()
+# 	batches_temp_res_list = check_connections_block(batches_nid_list, layer_block)
+# 	t2 = time.time()
+# 	check_connection_time.append(t2-t1) #------------------------------------------
+# 	print('----------------------check connections block total spend -----------------------------', t2-t1)
+	
+# 	src_list=[]
+# 	dst_list=[]
+
+# 	# see_memory_usage("------------------------------- before     for loop    batches_temp_res_list ")
+# 	for step, (srcnid, dstnid, current_block_global_eid) in enumerate(batches_temp_res_list):
+	
+# 		t_ = time.time()
+
+# 		cur_block = generate_one_block(raw_graph, srcnid, dstnid , current_block_global_eid) # block -------
+
+# 		t__=time.time()
+# 		block_generation_time.append(t__-t_)  #------------------------------------------
+# 		print('generate one block spend: ', t__-t_)
+# 		#----------------------------------------------------
+# 		# induced_src = cur_block.srcdata[dgl.NID]
+	
+# 		# e_src_local, e_dst_local = cur_block.edges(order='eid')
+# 		# e_src, e_dst = induced_src[e_src_local], induced_src[e_dst_local]
+# 		# e_src = e_src.detach().numpy().astype(int)
+# 		# e_dst = e_dst.detach().numpy().astype(int)
+
+# 		#----------------------------------------------------
+# 		blocks.append(cur_block)
+# 		src_list.append(srcnid)
+# 		dst_list.append(dstnid)
+
+# 	connection_time = sum(check_connection_time)
+# 	block_gen_time = sum(block_generation_time)
+
+# 	return blocks, src_list, dst_list, (connection_time, block_gen_time)
 
 
 
@@ -324,17 +308,6 @@ def gen_grouped_dst_list(prev_layer_blocks):
 		post_dst.append(src_nids)
 	return post_dst # return next layer's dst nids(equals prev layer src nids)
 
-def save_full_batch(args, epoch,item):
-	import os
-	newpath = r'../DATA/re/fan_out_'+args.fan_out+'/'
-	if not os.path.exists(newpath):
-		os.makedirs(newpath)
-	file_name=r'../DATA/re/fan_out_'+args.fan_out+'/'+args.dataset+'_'+str(epoch)+'_items.pickle'
-	# cwd = os.getcwd() 
-	with open(file_name, 'wb') as handle:
-		pickle.dump(item, handle, protocol=pickle.HIGHEST_PROTOCOL)
-	print(' full batch blocks saved')
-	return
 
 def generate_dataloader_wo_Betty_block(raw_graph, full_block_dataloader, args):
 	data_loader=[]
@@ -433,7 +406,7 @@ def generate_dataloader_wo_Betty_block(raw_graph, full_block_dataloader, args):
 
 
 def generate_dataloader_block(raw_graph, full_block_dataloader, args):
-
+    
 	if args.num_batch == 1:
 		return full_block_dataloader,[1], [0, 0, 0]
 	
@@ -442,92 +415,6 @@ def generate_dataloader_block(raw_graph, full_block_dataloader, args):
 	else: #'range' or 'random' in args.selection_method:
 		return generate_dataloader_wo_Betty_block(raw_graph, full_block_dataloader, args)
 	
-
-def generate_blocks_for_one_layer(raw_graph, block_2_graph, batches_nid_list):
-		
-	layer_src = block_2_graph.srcdata[dgl.NID]
-	layer_dst = block_2_graph.dstdata[dgl.NID]
-	layer_eid = block_2_graph.edata[dgl.NID].tolist()
-	print(sorted(layer_eid))
-	
-	blocks = []
-	check_connection_time = []
-	block_generation_time = []
-
-	t1= time.time()
-	batches_temp_res_list = check_connections_0(batches_nid_list, block_2_graph)
-	t2 = time.time()
-	check_connection_time.append(t2-t1) #------------------------------------------
-	src_list=[]
-	dst_list=[]
-	ll=len(batches_temp_res_list)
-
-	src_compare=[]
-	dst_compare=[]
-	eid_compare=[]
-	for step, (srcnid, dstnid, current_block_global_eid) in enumerate(batches_temp_res_list):
-	# for step, (srcnid, dstnid, current_block_global_eid, src_e, dst_e) in enumerate(batches_temp_res_list):
-		# print('batch ' + str(step) + '-' * 30)
-		t_ = time.time()
-		if step == ll-1:
-			print()
-		
-		cur_block = generate_one_block(raw_graph, current_block_global_eid, srcnid, dstnid)
-
-		t__=time.time()
-		block_generation_time.append(t__-t_)  #------------------------------------------
-		#----------------------------------------------------
-		print('batch: ', step)
-		induced_src = cur_block.srcdata[dgl.NID]
-		induced_dst = cur_block.dstdata[dgl.NID]
-		induced_eid = cur_block.edata[dgl.NID].tolist()
-		print('src and dst nids')
-		print(induced_src)
-		print(induced_dst)
-		e_src_local, e_dst_local = cur_block.edges(order='eid')
-		e_src, e_dst = induced_src[e_src_local], induced_src[e_dst_local]
-		e_src = e_src.detach().numpy().astype(int)
-		e_dst = e_dst.detach().numpy().astype(int)
-
-		combination = [p for p in zip(e_src, e_dst)]
-		print('batch block graph edges: ')
-		print(combination)
-		#----------------------------------------------------
-		blocks.append(cur_block)
-		src_list.append(srcnid)
-		dst_list.append(dstnid)
-
-		eid_compare.append(induced_eid)
-		src_compare.append(induced_src.tolist())
-		dst_compare.append(induced_dst.tolist())
-
-	tttt=sum(eid_compare,[])
-	print((set(tttt)))
-	if set(tttt)!= set(layer_eid):
-		print('the edges not match')
-		print(sorted(list((set(tttt)))))
-		print(sorted(list(set(layer_eid))))
-	if set(sum(src_compare,[]))!= set(layer_src.tolist()):
-		print('the src nodes not match')
-		print(set(sum(src_compare,[])))
-		print(set(layer_src.tolist()))
-	if set(sum(dst_compare,[]))!= set(layer_dst.tolist()):
-		print('the dst nodes not match')
-		print(set(sum(dst_compare,[])))
-		print(set(layer_dst.tolist()))
-
-		# data_loader.append((srcnid, dstnid, [cur_block]))
-		
-	# print("\nconnection checking time " + str(sum(check_connection_time)))
-	# print("total of block generation time " + str(sum(block_generation_time)))
-	# print("average of block generation time " + str(mean(block_generation_time)))
-	connection_time = sum(check_connection_time)
-	block_gen_time = sum(block_generation_time)
-	mean_block_gen_time = mean(block_generation_time)
-
-
-	return blocks, src_list,dst_list,(connection_time, block_gen_time, mean_block_gen_time)
-
 
 
 
@@ -607,11 +494,12 @@ def generate_dataloader_gp_block(raw_graph, full_block_dataloader, args):
 					prev_layer_blocks=blocks
 		
 				blocks_list.append(blocks)
+
 			connection_time, block_gen_time=time_1
 			connect_checking_time_list.append(connection_time)
 			block_gen_time_total+=block_gen_time
 		# connect_checking_time_res=sum(connect_checking_time_list)
-		batch_blocks_gen_mean_time= block_gen_time_total/num_batch
+		batch_blocks_gen_mean_time = block_gen_time_total/num_batch
 
 	for batch_id in range(num_batch):
 		cur_blocks=[]
@@ -623,27 +511,29 @@ def generate_dataloader_gp_block(raw_graph, full_block_dataloader, args):
 		data_loader.append((src, dst, cur_blocks))
 	
 	args.num_batch=num_batch
-
 	##########################################################################################################
-	check_t = 0
-	b_gen_t = 0
-	b_gen_t_mean = 0
-	gp_time = 0
-	for _ in range(args.num_re_partition):
-		data_loader, weights_list, gp_time, [check_t,b_gen_t, b_gen_t_mean] = re_partition_block(raw_graph, full_blocks, args,  data_loader, weights_list)
-	print('----------===============-------------===============-------------the number of batches *****----', len(data_loader))
-	print()
-	print('original number of batches: ',len(data_loader) - args.num_re_partition)
-	args.num_batch = len(data_loader) - args.num_re_partition   #reset  the original number of batches
-	if check_t:
-		connect_checking_time_list = connect_checking_time_list + [check_t]
+	if args.num_re_partition:
+	
+		check_t = 0
+		b_gen_t = 0
+		b_gen_t_mean = 0
+		gp_time = 0
+		for _ in range(args.num_re_partition):
+			data_loader, weights_list, gp_time, [check_t,b_gen_t, b_gen_t_mean] = re_partition_block(raw_graph, full_blocks, args,  data_loader, weights_list)
+		print('----------===============-------------===============-------------the number of batches *****----', len(data_loader))
+		print()
+		print('original number of batches: ',len(data_loader) - args.num_re_partition)
+		args.num_batch = len(data_loader) - args.num_re_partition   #reset  the original number of batches
+		if check_t:
+			connect_checking_time_list = connect_checking_time_list + [check_t]
 
-	block_gen_time_total = block_gen_time_total + b_gen_t
-	batch_blocks_gen_mean_time = block_gen_time_total/len(data_loader)/args.num_layers
-	print('re graph partition time: ', gp_time)
-	print()
+		block_gen_time_total = block_gen_time_total + b_gen_t
+		batch_blocks_gen_mean_time = block_gen_time_total/len(data_loader)/args.num_layers
+		print('re graph partition time: ', gp_time)
+		print()
 	##########################################################################################################
-
+	
+		
 	return data_loader, weights_list, [sum(connect_checking_time_list), block_gen_time_total, batch_blocks_gen_mean_time]
 	# return data_loader, weights_list, sum_list
 
@@ -739,55 +629,4 @@ def re_partition_block(raw_graph, full_blocks, args,  data_loader, weights_list)
 
 
 
-def intuitive_gp_first_layer_input_standard(args,  data_loader):
-	b_id = False
-	len_src_list=[]
-	# largest_src_list = [list(data_loader[batch_id])[0] for batch_id in range(args.num_batch)]
-	for batch_id in range(len(data_loader)):
-		src = list(data_loader[batch_id])[0]
-		len_src_list.append(len(src))
-		# dst = final_dst_list[batch_id]
-	len_src_max = max(len_src_list)
-	len_src_min = min(len_src_list)
-	
-	# if len_src_max > len_src_min * 1.1: # intuitive way to decide wheather it need re partition or not
-	# 	b_id = len_src_list.index(len_src_max)
-	b_id = len_src_list.index(len_src_max)
-	return b_id
 
-
-
-
-def in_degree_gp_first_layer_output_standard(args,  data_loader):
-	b_id = False
-	len_src_dict={}
-	# largest_src_list = [list(data_loader[batch_id])[0] for batch_id in range(args.num_batch)]
-	for batch_id in range(len(data_loader)):
-		src = list(data_loader[batch_id])[0]
-		len_src_dict[batch_id]=len(src)
-		# dst = final_dst_list[batch_id]
-	res = sorted(len_src_dict.items(), key=lambda item: item[1])
-	print('dict sorted')
-	print(res)
-	len_src_max = list(res[-1])[1]
-	len_src_min = list(res[0])[1]
-	
-	# if len_src_max > len_src_min * 1.1: # intuitive way to decide wheather it need re partition or not
-	# 	b_id = len_src_list.index(len_src_max)
-	from collections import Counter
-	for batch_id, input_len in enumerate(res):
-		src, dst, blocks = data_loader[batch_id]
-		Block = blocks[0]
-		in_degrees = Block.in_degrees()
-		# in_degrees = Block.in_degrees(109418)
-		print('batch ', batch_id)
-		print(in_degrees)
-		# Compute torch.histc(input, bins=100, min=0, max=100). 
-		# It returns a tensor of histogram values. Set bins, min, 
-		# and max to appropriate values according to your need.
-		print(torch.histc(in_degrees.float()))
-		print(Counter(in_degrees.tolist()))
-		print()
-
-
-	return b_id

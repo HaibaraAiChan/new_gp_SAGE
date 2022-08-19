@@ -11,14 +11,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import os
-# from block_dataloader import generate_dataloader
-from block_dataloader import generate_dataloader_block, get_global_graph_edges_ids
-# from block_dataloader import reconstruct_subgraph, reconstruct_subgraph_manually
+
+from block_dataloader import generate_dataloader_block
+
 import dgl.nn.pytorch as dglnn
 import time
 import argparse
 import tqdm
-# import deepspeed
+
 import random
 from graphsage_model_products_mem import GraphSAGE
 import dgl.function as fn
@@ -376,8 +376,8 @@ def main():
 	# argparser.add_argument('--root', type=str, default='../my_full_graph/')
 	# argparser.add_argument('--dataset', type=str, default='ogbn-arxiv')
 	# argparser.add_argument('--dataset', type=str, default='ogbn-mag')
-	argparser.add_argument('--dataset', type=str, default='ogbn-products')
-	# argparser.add_argument('--dataset', type=str, default='cora')
+	# argparser.add_argument('--dataset', type=str, default='ogbn-products')
+	argparser.add_argument('--dataset', type=str, default='cora')
 	# argparser.add_argument('--dataset', type=str, default='karate')
 	# argparser.add_argument('--dataset', type=str, default='reddit')
 	# argparser.add_argument('--aggre', type=str, default='lstm')
@@ -398,8 +398,8 @@ def main():
 
 	argparser.add_argument('--num-hidden', type=int, default=256)
 
-	argparser.add_argument('--num-layers', type=int, default=1)
-	argparser.add_argument('--fan-out', type=str, default='10')
+	argparser.add_argument('--num-layers', type=int, default=2)
+	argparser.add_argument('--fan-out', type=str, default='10,25')
 	
 	
 
