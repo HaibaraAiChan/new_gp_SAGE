@@ -131,11 +131,16 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 	# print()
 
 	induced_src = current_layer_block.srcdata[dgl.NID]
-
+	
 	eids_global = current_layer_block.edata['_ID']
 
 	t1=time.time()
 	src_nid_list = induced_src.tolist()
+	# print('src_nid_list ', src_nid_list)
+	# the order of srcdata in current block is not increased as the original graph. For example,
+	# src_nid_list  [1049, 432, 741, 554, ... 1683, 1857, 1183, ... 1676]
+	# dst_nid_list  [1049, 432, 741, 554, ... 1683]
+	
 	dict_nid_2_local = dict(zip(src_nid_list, range(len(src_nid_list)))) # speedup 
 	str_+= 'time for parepare 1: '+str(time.time()-t1)+'\n'
 
@@ -150,16 +155,25 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 		tt1=time.time()
 
 		local_in_edges_tensor = current_layer_block.in_edges(local_output_nid, form='all')
-
+		# print('local_in_edges_tensor', local_in_edges_tensor)
 		str_+= 'local_in_edges_tensor generation: '+str(time.time()-tt1)+'\n'
-		tt2=time.time()
+		
 		# return (𝑈,𝑉,𝐸𝐼𝐷)
 		# get local srcnid and dstnid from subgraph
 		mini_batch_src_local= list(local_in_edges_tensor)[0] # local (𝑈,𝑉,𝐸𝐼𝐷);
+		str_+= "\n&&&&&&&&&&&&&&& before remove duplicate length: "+ str(len(mini_batch_src_local))+'\n'
+		ttpp=time.time()
+		# print('mini_batch_src_local', mini_batch_src_local)
+		mini_batch_src_local = list(OrderedDict.fromkeys(mini_batch_src_local.tolist()))
+		# print('mini_batch_src_local', mini_batch_src_local)
+		str_+= 'remove duplicated spend time : '+ str(time.time()-ttpp)+'\n\n'
+		str_+= "&&&&&&&&&&&&&&& after remove duplicate length: "+ str(len(mini_batch_src_local)) +'\n\n'
+		
+		tt2=time.time()
+		# mini_batch_src_local = torch.tensor(mini_batch_src_local, dtype=torch.long)
 		mini_batch_src_global= induced_src[mini_batch_src_local].tolist() # map local src nid to global.
-
 		str_+= 'mini_batch_src_global generation: '+str( time.time()-tt2) +'\n'
-		tt3=time.time()
+		
 
 		mini_batch_dst_local= list(local_in_edges_tensor)[1]
 		
@@ -168,10 +182,11 @@ def check_connections_block(batched_nodes_list, current_layer_block):
 		eid_local_list = list(local_in_edges_tensor)[2] # local (𝑈,𝑉,𝐸𝐼𝐷); 
 		global_eid_tensor = eids_global[eid_local_list] # map local eid to global.
 	# 	# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  bottleneck  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-		str_+= "\n&&&&&&&&&&&&&&& before remove duplicate length: "+ str(len(mini_batch_src_global))+'\n'
-		# ttp=time.time()
-
+		# str_+= "\n&&&&&&&&&&&&&&& before remove duplicate length: "+ str(len(mini_batch_src_global))+'\n'
+		# # ttp=time.time()
+		# print('mini_batch_src_global', mini_batch_src_global)
 		# mini_batch_src_global = list(OrderedDict.fromkeys(mini_batch_src_global))
+		# print('mini_batch_src_global', mini_batch_src_global)
 		# str_+= "&&&&&&&&&&&&&&& after remove duplicate length: "+ str(len(mini_batch_src_global)) +'\n\n'
 		ttp1=time.time()
 
@@ -473,7 +488,7 @@ def generate_dataloader_gp_block(raw_graph, full_block_dataloader, args):
 				select_time=time.time()-t1
 				print(str(args.selection_method)+' selection method  spend '+ str(select_time))
 				# block 0 : (src_0, dst_0); block 1 : (src_1, dst_1);.......
-				blocks, src_list, dst_list,time_1 = generate_blocks_for_one_layer_block(raw_graph, layer_block,  batched_output_nid_list)
+				blocks, src_list, dst_list, time_1 = generate_blocks_for_one_layer_block(raw_graph, layer_block,  batched_output_nid_list)
 				
 				prev_layer_blocks=blocks
 				blocks_list.append(blocks)

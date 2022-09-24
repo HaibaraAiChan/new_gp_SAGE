@@ -5,6 +5,7 @@ File=full_Betty_products_sage.py
 # File=loading_data.py
 Data=ogbn-products
 # Data=ogbn-arxiv
+Data=cora
 model=sage
 seed=1236 
 setseed=True

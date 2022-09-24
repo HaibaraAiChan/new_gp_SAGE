@@ -156,7 +156,7 @@ def run(args, device, data):
 
 	sampler = dgl.dataloading.MultiLayerNeighborSampler(processed_fan_out)
 	full_batch_size = len(train_nid)
-	batch_size = int(full_batch_size/args.num_batch)
+	batch_size = int(full_batch_size/args.num_batch) + (full_batch_size % args.num_batch>0)
 	args.batch_size = batch_size
 	
 
@@ -184,7 +184,7 @@ def run(args, device, data):
 					args.dropout).to(device)
 	loss_fcn = F.nll_loss
 	if args.GPUmem:
-				see_memory_usage("----------------------------------------after model to device")
+		see_memory_usage("----------------------------------------after model to device")
 	logger = Logger(args.num_runs, args)
 	dur = []
 	time_block_gen=[]
@@ -202,8 +202,10 @@ def run(args, device, data):
 				t0 = time.time()
 			loss_sum=0
 			tt = 0
+			num_input_nids=0
 			for step, (input_nodes, seeds, blocks) in enumerate(full_batch_dataloader):
 				train_st = time.time()
+				num_input_nids	+= len(input_nodes)
 
 				batch_inputs, batch_labels = load_block_subtensor(nfeats, labels, blocks, device,args)#------------*
 				blocks = [block.int().to(device) for block in blocks]#------------*
@@ -212,6 +214,7 @@ def run(args, device, data):
 				loss.backward()#------------*
 				optimizer.step()
 				optimizer.zero_grad()
+
 				if step < args.num_batch-1:
 					tt += (time.time()-train_st)
 				else:
@@ -224,10 +227,10 @@ def run(args, device, data):
 				
 				train_t_avg.append(train_t)
 				
-					
-				
 				print('* Pure training time/epoch {}'.format(train_t))
 				print('Training time/epoch {}'.format(full_epoch))
+
+			print('Number of first layer input nodes during this epoch: ', num_input_nids)
 
 		print('mean Pure training time/epoch {}'.format(mean(train_t_avg)))
 		print('mean dataloder + train time/epoch {}'.format(mean(dur)))
@@ -288,7 +291,7 @@ def main():
 
 	#-------------------------------------------------------------------------------------------------------
 	argparser.add_argument('--num-runs', type=int, default=1)
-	argparser.add_argument('--num-epochs', type=int, default=5)
+	argparser.add_argument('--num-epochs', type=int, default=1)
 	# argparser.add_argument('--num-epochs', type=int, default=500)
 	# argparser.add_argument('--num-runs', type=int, default=10)
 	# argparser.add_argument('--num-epochs', type=int, default=500)
@@ -316,14 +319,14 @@ def main():
 	# argparser.add_argument('--num-layers', type=int, default=2)
 	# argparser.add_argument('--fan-out', type=str, default='10,25')
 
-	argparser.add_argument('--num-batch', type=int, default=32)
+	argparser.add_argument('--num-batch', type=int, default=1) #<---===========
 	argparser.add_argument('--batch-size', type=int, default=0)
 
 	# argparser.add_argument('--num-layers', type=int, default=2)
 	# argparser.add_argument('--fan-out', type=str, default='10,25')
 	# argparser.add_argument('--num-batch', type=int, default=2)
 	
-	argparser.add_argument('--log-indent', type=float, default=2)
+	argparser.add_argument('--log-indent', type=float, default=0)
 #--------------------------------------------------------------------------------------
 	# argparser.add_argument('--target-redun', type=float, default=1.9)
 	# argparser.add_argument('--alpha', type=float, default=1)

@@ -15,6 +15,7 @@ import pandas as pd
 import sys
 from collections import Counter
 from math import ceil
+from cpu_mem_usage import get_memory
 
 # sys.path.insert(0,'..')
 # from draw_graph import draw_dataloader_blocks_pyvis_total, gen_pyvis_graph_local
@@ -137,33 +138,49 @@ class Graph_Partitioner:  # ----------------------*** split the output layer blo
 		elif self.selection_method == "REG" :
 			print('REG start----................................')
 			ts = time.time()
+			get_memory('---------================-----------------=============---------REG before start \n')
 			u, v =self.layer_block.edges()[0], self.layer_block.edges()[1] # local edges
 			g = dgl.graph((u,v))
 			# graph_in = Counter(g.in_degrees().tolist())
+			print('number of edges of full batch : ',len(u) )
+			get_memory('---------================-----------------=============---------REG start \n')
 			A = g.adjacency_matrix()
+			get_memory('---------================-----------------=============---------REG A \n')
 			AT= torch.transpose(A, 0, 1)
+			get_memory('---------================-----------------=============---------REG AT \n')
 			m_at = AT._indices().tolist()
+			get_memory('---------================-----------------=============---------REG indices AT \n')
 			m_a  = A._indices().tolist()
 			length = len(m_a[0])
-			
+			length2 = len(m_a[1])
+			get_memory('---------================-----------------=============---------REG indices A \n')
 			g_at = dgl.graph((m_at[0], m_at[1]))
 			g_at.edata['w'] = torch.ones(length).requires_grad_()
+			get_memory('---------================-----------------=============---------REG weight AT \n')
 			g_a = dgl.graph((m_a[0], m_a[1]))
 			g_a.edata['w'] = torch.ones(length).requires_grad_()
+			get_memory('---------================-----------------=============---------REG weight A \n')
 			auxiliary_graph = dgl.adj_product_graph(g_at, g_a, 'w')
+			get_memory('---------================-----------------=============---------REG auxiliary graph done \n')
 			to_remove = self.remove_non_output_nodes()
 			if len(to_remove)>0:
 				auxiliary_graph.remove_nodes(torch.tensor(to_remove))
 			auxiliary_graph_no_diag = dgl.remove_self_loop(auxiliary_graph)
 			# res = Counter(auxiliary_graph_no_diag.edata['w'].tolist())
+			save_file=auxiliary_graph_no_diag.adjacency_matrix()
+			
+			tp1 = time.time()
 			partition = dgl.metis_partition(g=auxiliary_graph_no_diag,k=self.args.num_batch)
+			tp2 = time.time()
 			res=[]
 			for pid in partition:
 				nids = partition[pid].ndata[dgl.NID].tolist()
 				res.append(sorted(nids))
 				print(len(nids))
 			print('REG metis partition end ----................................')
-			print('the time spent: ', time.time()-ts)
+			print('the time spent: ', tp2-ts)
+			print('REG construction  time spent: ', tp1-ts)
+			print('pure dgl.metis_partition the time spent: ', tp2-tp1)
 			self.local_batched_seeds_list=res
 		return
 
