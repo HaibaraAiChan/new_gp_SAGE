@@ -23,7 +23,7 @@ import random
 from graphsage_model_products_mem import GraphSAGE
 import dgl.function as fn
 from load_graph import load_reddit, inductive_split, load_ogb, load_cora, load_karate, prepare_data, load_pubmed
-from load_graph import load_ogbn_mag    ###### TODO
+# from load_graph import load_ogbn_mag    ###### TODO
 from load_graph import load_ogbn_dataset
 from memory_usage import see_memory_usage, nvidia_smi_usage
 import tracemalloc
@@ -179,7 +179,11 @@ def run(args, device, data):
 					args.dropout).to(device)
 					
 	loss_fcn = nn.CrossEntropyLoss()
-
+	print('the paramters before train----------0000000000')
+	for name, param in model.named_parameters():
+				print(name)
+				print(param)
+	print('------------------------------------0000000000')
 	if args.GPUmem:
 				see_memory_usage("----------------------------------------after model to device")
 	logger = Logger(args.num_runs, args)
@@ -312,7 +316,15 @@ def run(args, device, data):
 			print('times | data loading | block to device | model prediction | loss calculation | loss backward |  optimizer step |')
 			print('      |'+str(mean(data_loading_t))+' |'+str(mean(block_to_t))+' |'+str(mean(modeling_t))+' |'+str(mean(loss_cal_t))+' |'+str(mean(backward_t))+' |'+str(ttend-tte)+' |')
 			print('----------------------------------------------------------pseudo_mini_loss sum ' + str(loss_sum.tolist()))
-			
+			print('the paramters after train----------0000000000')
+			print('weights of lstm')
+			for name, param in model.named_parameters():
+				print(name)
+				print(param)
+			print('------------------------------------0000000000')
+   
+   
+   
 			if epoch >= args.log_indent:
 				tmp_t2=time.time()
 				full_epoch=time.time() - t0
@@ -372,21 +384,22 @@ def main():
 	argparser.add_argument('--seed', type=int, default=1236)
 	argparser.add_argument('--setseed', type=bool, default=True)
 	argparser.add_argument('--GPUmem', type=bool, default=True)
-	argparser.add_argument('--load-full-batch', type=bool, default=True)
+	# argparser.add_argument('--load-full-batch', type=bool, default=True)
+	argparser.add_argument('--load-full-batch', type=bool, default=False)
 	# argparser.add_argument('--root', type=str, default='../my_full_graph/')
-	argparser.add_argument('--dataset', type=str, default='ogbn-arxiv')
+	# argparser.add_argument('--dataset', type=str, default='ogbn-arxiv')
 	# argparser.add_argument('--dataset', type=str, default='ogbn-mag')
 	# argparser.add_argument('--dataset', type=str, default='ogbn-products')
 	# argparser.add_argument('--dataset', type=str, default='cora')
-	# argparser.add_argument('--dataset', type=str, default='karate')
+	argparser.add_argument('--dataset', type=str, default='karate')
 	# argparser.add_argument('--dataset', type=str, default='reddit')
-	# argparser.add_argument('--aggre', type=str, default='lstm')
-	argparser.add_argument('--aggre', type=str, default='mean')
+	argparser.add_argument('--aggre', type=str, default='lstm')
+	# argparser.add_argument('--aggre', type=str, default='mean')
 	# argparser.add_argument('--selection-method', type=str, default='range')
 	# argparser.add_argument('--selection-method', type=str, default='random')
 	# argparser.add_argument('--selection-method', type=str, default='metis')
 	argparser.add_argument('--selection-method', type=str, default='REG')
-	argparser.add_argument('--num-batch', type=int, default=2)
+	argparser.add_argument('--num-batch', type=int, default=1)
 
 	argparser.add_argument('--re-partition-method', type=str, default='REG')
 	# argparser.add_argument('--re-partition-method', type=str, default='random')
@@ -396,10 +409,14 @@ def main():
 	argparser.add_argument('--num-runs', type=int, default=1)
 	argparser.add_argument('--num-epochs', type=int, default=1)
 
-	argparser.add_argument('--num-hidden', type=int, default=256)
+	argparser.add_argument('--num-hidden', type=int, default=6)
 
 	argparser.add_argument('--num-layers', type=int, default=1)
-	argparser.add_argument('--fan-out', type=str, default='10')
+	argparser.add_argument('--fan-out', type=str, default='2')
+	# argparser.add_argument('--fan-out', type=str, default='10')
+	# argparser.add_argument('--num-layers', type=int, default=2)
+	# argparser.add_argument('--fan-out', type=str, default='2,4')
+	# argparser.add_argument('--fan-out', type=str, default='10,25')
 	
 	
 

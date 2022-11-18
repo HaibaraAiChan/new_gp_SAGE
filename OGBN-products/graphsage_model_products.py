@@ -206,7 +206,7 @@ class GraphSAGE(nn.Module):
 
 		x = self.layers[-1](blocks[-1], x)
 		# see_memory_usage("----------------------------------------end of model layers  after x = self.layers[-1](blocks[-1], x)")
-		print(x.shape)
+		# print(x.shape)
 		# print("input nodes number: "+str(len(blocks[-1].srcdata[dgl.NID])))
 		# print("output nodes number: "+str(len(blocks[-1].dstdata[dgl.NID])))
 		# print("edges number: "+str(len(blocks[-1].edges()[1])))

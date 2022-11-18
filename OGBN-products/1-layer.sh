@@ -31,12 +31,12 @@ re_partition_method=random
 
 layersList=(1)
 # fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 13 15 20 25 30 40 50 100 150 200 400 800)
-fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 15 20 30 50 100 )
+# fan_out_list=(1 2 3 4 5 6 7 8 9 10 11 12 15 20 30 50 100 )
 # fan_out_list=(1 2 3 4 5 10 50 100 200 300 400 500 800)
-# fan_out_list=(2 3 4 )
+fan_out_list=(10 )
 hiddenList=(256)
-AggreList=(pool)
-aggre=pool
+AggreList=(lstm)
+aggre=lstm
 # AggreList=(mean)
 # aggre=mean
 savePath=./main_result/without_re/different_aggregator/${aggre}/1-epoch/${Data}/1-layer-REG/

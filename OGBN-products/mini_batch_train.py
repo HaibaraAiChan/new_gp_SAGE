@@ -109,15 +109,15 @@ def load_block_subtensor(nfeat, labels, blocks, device,args):
 	Extracts features and labels for a subset of nodes
 	"""
 
-	if args.GPUmem:
-		see_memory_usage("----------------------------------------before batch input features to device")
+	# if args.GPUmem:
+		# see_memory_usage("----------------------------------------before batch input features to device")
 	batch_inputs = nfeat[blocks[0].srcdata[dgl.NID]].to(device)
-	if args.GPUmem:
-		see_memory_usage("----------------------------------------after batch input features to device")
+	# if args.GPUmem:
+		# see_memory_usage("----------------------------------------after batch input features to device")
 	batch_labels = labels[blocks[-1].dstdata[dgl.NID]].to(device)
-	print(type(batch_labels))
-	if args.GPUmem:
-		see_memory_usage("----------------------------------------after  batch labels to device")
+	# print(type(batch_labels))
+	# if args.GPUmem:
+		# see_memory_usage("----------------------------------------after  batch labels to device")
 	return batch_inputs, batch_labels
 
 def get_compute_num_nids(blocks):
@@ -141,8 +141,8 @@ def get_FL_output_num_nids(blocks):
 
 #### Entry point
 def run(args, device, data):
-	if args.GPUmem:
-		see_memory_usage("----------------------------------------start of run function ")
+	# if args.GPUmem:
+		# see_memory_usage("----------------------------------------start of run function ")
 	# Unpack data
 	g, nfeats, labels, n_classes, train_nid, val_nid, test_nid = data
 	in_feats = len(nfeats[0])
@@ -170,8 +170,8 @@ def run(args, device, data):
 		shuffle=True,
 		drop_last=False,
 		num_workers=args.num_workers)
-	if args.GPUmem:
-		see_memory_usage("----------------------------------------before model to device ")
+	# if args.GPUmem:
+		# see_memory_usage("----------------------------------------before model to device ")
 
 
 	model = GraphSAGE(
@@ -183,8 +183,8 @@ def run(args, device, data):
 					F.relu,
 					args.dropout).to(device)
 	loss_fcn = F.nll_loss
-	if args.GPUmem:
-		see_memory_usage("----------------------------------------after model to device")
+	# if args.GPUmem:
+		# see_memory_usage("----------------------------------------after model to device")
 	logger = Logger(args.num_runs, args)
 	dur = []
 	time_block_gen=[]
@@ -203,6 +203,7 @@ def run(args, device, data):
 			loss_sum=0
 			tt = 0
 			num_input_nids=0
+			
 			for step, (input_nodes, seeds, blocks) in enumerate(full_batch_dataloader):
 				train_st = time.time()
 				num_input_nids	+= len(input_nodes)
@@ -214,12 +215,14 @@ def run(args, device, data):
 				loss.backward()#------------*
 				optimizer.step()
 				optimizer.zero_grad()
+				print('epoch '+str(epoch)+' len(seeds) '+str(len(seeds))+' Loss ',loss.item())
 
 				if step < args.num_batch-1:
 					tt += (time.time()-train_st)
 				else:
 					tt += (time.time()-train_st)
 					train_t = tt
+			print()
 			if epoch >= args.log_indent:
 				
 				full_epoch=time.time() - t0
@@ -227,13 +230,13 @@ def run(args, device, data):
 				
 				train_t_avg.append(train_t)
 				
-				print('* Pure training time/epoch {}'.format(train_t))
-				print('Training time/epoch {}'.format(full_epoch))
+		# 		print('* Pure training time/epoch {}'.format(train_t))
+		# 		print('Training time/epoch {}'.format(full_epoch))
 
-			print('Number of first layer input nodes during this epoch: ', num_input_nids)
+		# 	print('Number of first layer input nodes during this epoch: ', num_input_nids)
 
-		print('mean Pure training time/epoch {}'.format(mean(train_t_avg)))
-		print('mean dataloder + train time/epoch {}'.format(mean(dur)))
+		# print('mean Pure training time/epoch {}'.format(mean(train_t_avg)))
+		# print('mean dataloder + train time/epoch {}'.format(mean(dur)))
 		# 	if args.eval:
     			
 		# 		train_acc, val_acc, test_acc = evaluate(model, g, nfeats, labels, train_nid, val_nid, test_nid, device, args)
@@ -281,22 +284,22 @@ def main():
 	# argparser.add_argument('--root', type=str, default='../my_full_graph/')
 	# argparser.add_argument('--dataset', type=str, default='ogbn-arxiv')
 	# argparser.add_argument('--dataset', type=str, default='ogbn-mag')
-	argparser.add_argument('--dataset', type=str, default='ogbn-products')
-	# argparser.add_argument('--aggre', type=str, default='lstm')
-	# argparser.add_argument('--dataset', type=str, default='cora')
+	# argparser.add_argument('--dataset', type=str, default='ogbn-products')
+	argparser.add_argument('--aggre', type=str, default='lstm')
+	argparser.add_argument('--dataset', type=str, default='cora')
 	# argparser.add_argument('--dataset', type=str, default='karate')
 	# argparser.add_argument('--dataset', type=str, default='reddit')
-	argparser.add_argument('--aggre', type=str, default='mean')
+	# argparser.add_argument('--aggre', type=str, default='mean')
 	# argparser.add_argument('--aggre', type=str, default='pool')
 
 	#-------------------------------------------------------------------------------------------------------
 	argparser.add_argument('--num-runs', type=int, default=1)
-	argparser.add_argument('--num-epochs', type=int, default=1)
+	argparser.add_argument('--num-epochs', type=int, default=5)
 	# argparser.add_argument('--num-epochs', type=int, default=500)
 	# argparser.add_argument('--num-runs', type=int, default=10)
 	# argparser.add_argument('--num-epochs', type=int, default=500)
 	# argparser.add_argument('--num-hidden', type=int, default=64)	
-	argparser.add_argument('--num-hidden', type=int, default=256)
+	argparser.add_argument('--num-hidden', type=int, default=6)
 
 	# argparser.add_argument('--num-layers', type=int, default=6)	
 	# argparser.add_argument('--fan-out', type=str, default='10,25,30,40,50,60')
@@ -313,8 +316,8 @@ def main():
 	# argparser.add_argument('--num-layers', type=int, default=3)
 	# argparser.add_argument('--fan-out', type=str, default='10,25,50')
 	
-	argparser.add_argument('--num-layers', type=int, default=2)
-	argparser.add_argument('--fan-out', type=str, default='10,25')
+	argparser.add_argument('--num-layers', type=int, default=1)
+	argparser.add_argument('--fan-out', type=str, default='10')
 
 	# argparser.add_argument('--num-layers', type=int, default=2)
 	# argparser.add_argument('--fan-out', type=str, default='10,25')
