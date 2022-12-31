@@ -8,7 +8,9 @@ from . import ops
 from .base import ALL, EID, NID, DGLError, dgl_warning, is_all
 from .frame import Frame
 from .udf import EdgeBatch, NodeBatch
+import math
 
+global_split_bkt_idx=[]
 
 def is_builtin(func):
     """Return true if the function is a DGL builtin function."""
@@ -97,8 +99,8 @@ def invoke_edge_udf(graph, eid, etype, func, *, orig_eid=None):
     )
     return func(ebatch)
 
-
-def invoke_udf_reduce(graph, func, msgdata, *, orig_nid=None):
+# def invoke_udf_reduce(graph, func, msgdata, *, orig_nid=None, ): # original 
+def invoke_udf_reduce(graph, func, msgdata, degree, num_split, step, *, orig_nid=None, ):
     """Invoke user-defined reduce function on all the nodes in the graph.
 
     It analyzes the graph, groups nodes by their degrees and applies the UDF on each
@@ -128,25 +130,47 @@ def invoke_udf_reduce(graph, func, msgdata, *, orig_nid=None):
     ntid = graph.get_ntype_id_from_dst(ntype)
     dstdata = graph._node_frames[ntid]
     msgdata = Frame(msgdata)
-
+    #-------------------------------------------------------------------new added-start
+    if type(degree) == int and degree == -1:
+        unique_degs, bucketor = _bucketing(degs, degree=degree, num_split=-1, step=-1)
+    elif degree.dim() == 0 :
+        if  degree.item() >= 1 :
+            if step >= 0 :  # the number  of nodes of current degree is too large, 
+                # which needs to split n partition, step=[0, n-1]
+                unique_degs, bucketor = _bucketing(degs, degree=degree, num_split=num_split,step=step)
+            else: # step == -1, not split degree bucket
+                unique_degs, bucketor = _bucketing(degs, degree=degree, num_split=-1, step=-1)
+    else:
+        unique_degs, bucketor = _bucketing(degs, degree=degree, num_split=-1, step=-1)
+    #--------------------------------------------------------------------new added end
     # degree bucketing
-    unique_degs, bucketor = _bucketing(degs)
+    # unique_degs, bucketor = _bucketing(degs) # original code
     bkt_rsts = []
     bkt_nodes = []
+    # nids_ = bucketor(nodes)            #----=-=-=-=-=-=-log
+    # original_nids_ = bucketor(orig_nid) #----=-=-=-=-=-=-log
+    # import torch
+    # print('core.py : output nodes global nid: ', torch.stack(original_nids_).to(torch.int32).squeeze()[:10])
+    # print('core.py : output nodes local nid: ', nodes[:10])
+    
     for deg, node_bkt, orig_nid_bkt in zip(
         unique_degs, bucketor(nodes), bucketor(orig_nid)
     ):
         if deg == 0:
             # skip reduce function for zero-degree nodes
             continue
-        bkt_nodes.append(node_bkt)
+        bkt_nodes.append(node_bkt) # local nid (not keep original order of output)
         ndata_bkt = dstdata.subframe(node_bkt)
 
         # order the incoming edges per node by edge ID
+        # print(graph.in_edges(node_bkt[0], form="eid"))
+        # print(graph.in_edges(node_bkt[1], form="eid"))
+        # print(graph.in_edges(node_bkt[2], form="eid"))
+        # print('core.py : node_bkt local nid: ', node_bkt[:10])
         eid_bkt = F.zerocopy_to_numpy(graph.in_edges(node_bkt, form="eid"))
         assert len(eid_bkt) == deg * len(node_bkt)
         eid_bkt = np.sort(eid_bkt.reshape((len(node_bkt), deg)), 1)
-        eid_bkt = F.zerocopy_from_numpy(eid_bkt.flatten())
+        eid_bkt = F.zerocopy_from_numpy(eid_bkt.flatten()) # local eid
 
         msgdata_bkt = msgdata.subframe(eid_bkt)
         # reshape all msg tensors to (num_nodes_bkt, degree, feat_size)
@@ -155,7 +179,18 @@ def invoke_udf_reduce(graph, func, msgdata, *, orig_nid=None):
             newshape = (len(node_bkt), deg) + F.shape(msg)[1:]
             maildata[k] = F.reshape(msg, newshape)
         # invoke udf
+        # print('maildata ', maildata)
         nbatch = NodeBatch(graph, orig_nid_bkt, ntype, ndata_bkt, msgs=maildata)
+        # print('-='*50)
+        # print('degree ', deg)
+        # print('orig_nid_bkt')
+        # print(orig_nid_bkt)
+        # print('maildata')
+        # print(maildata)
+        # print('func(nbatch)')
+        # res__= func(nbatch)
+        # print(res__)
+        # print('-='*50)
         bkt_rsts.append(func(nbatch))
 
     # prepare a result frame
@@ -175,8 +210,8 @@ def invoke_udf_reduce(graph, func, msgdata, *, orig_nid=None):
 
     return retf
 
-
-def _bucketing(val):
+# def _bucketing(val): # original
+def _bucketing(val, degree, num_split, step): 
     """Internal function to create groups on the values.
 
     Parameters
@@ -192,63 +227,53 @@ def _bucketing(val):
         A bucketing function that splits the given tensor data as the same
         way of how the :attr:`val` tensor is grouped.
     """
-    sorted_val, idx = F.sort_1d(val)
+    import torch
+    
+    idx_dict = dict(zip(range(len(val)),val.tolist())) #####
+    sorted_res = dict(sorted(idx_dict.items(), key=lambda item: item[1])) ######
+    sorted_val = torch.tensor(list(sorted_res.values())).to(val.device)  ######
+    idx = torch.tensor(list(sorted_res.keys())).to(val.device) ######
+    # # #---------------------------------------------------------------orignal part start
+    # sorted_val, idx = F.sort_1d(val)
+    # #---------------------------------------------------------------orignal part end
     unique_val = F.asnumpy(F.unique(sorted_val))
     bkt_idx = []
-    #---------------------------------------------------------------orignal part
-    # for v in unique_val:
-    #     eqidx = F.nonzero_1d(F.equal(sorted_val, v))
-    #     bkt_idx.append(F.gather_row(idx, eqidx))
-
-    #---------------------------------------------------------------replaced part
-    # for v in unique_val:
-    #     eqidx = F.nonzero_1d(F.equal(sorted_val, v))
-    #     tmp = F.gather_row(idx, eqidx)
-    #     if v ==  unique_val[-1]:
-    #         nn = len(tmp)//2
-    #         bkt_idx.append(tmp[:nn+1])
-    #         bkt_idx.append(tmp[nn+1:])
-    #     else:
-    #         bkt_idx.append(tmp)
-
-    # unique_val = np.append(unique_val,unique_val[-1]) # add the number of largest degree
-
-    #--------------------------------------------------------------- 4 splits 
-    # for v in unique_val:
-    #     eqidx = F.nonzero_1d(F.equal(sorted_val, v))
-    #     tmp = F.gather_row(idx, eqidx)
-    #     if v ==  unique_val[-1]:
-    #         nn = len(tmp)//4
-    #         bkt_idx.append(tmp[:nn+1])
-    #         bkt_idx.append(tmp[nn+1:2*nn+1])
-    #         bkt_idx.append(tmp[2*nn+1:3*nn+1])
-    #         bkt_idx.append(tmp[3*nn+1:])
-    #     else:
-    #         bkt_idx.append(tmp)
-
-    # unique_val = np.append(unique_val,unique_val[-1]) # add the number of largest degree
-    # unique_val = np.append(unique_val,unique_val[-1])
-    # unique_val = np.append(unique_val,unique_val[-1])
-    # unique_val = np.append(unique_val,unique_val[-1])
-    #--------------------------------------------------------------- 
-    #--------------------------------------------------------------- N splits 
-    num_split = 16                                                 # N = 16
-    for v in unique_val:
-        eqidx = F.nonzero_1d(F.equal(sorted_val, v))
-        tmp = F.gather_row(idx, eqidx)
-        if v ==  unique_val[-1]:
-            nn = len(tmp)//num_split
-            bkt_idx.append(tmp[:nn+1])
-            for i in range(1,num_split-1):
-                bkt_idx.append(tmp[i*nn+1:((i+1)*nn+1)])
-            bkt_idx.append(tmp[(num_split-1)*nn+1:])
-        else:
-            bkt_idx.append(tmp)
-    tail_degree = unique_val[-1]
-    for i in range(num_split):
-        unique_val = np.append(unique_val,tail_degree) # add the number of largest degree
+    if type(degree ) == int and degree == -1:
+        # # #---------------------------------------------------------------orignal part start
+        for v in unique_val:
+            eqidx = F.nonzero_1d(F.equal(sorted_val, v))
+            bkt_idx.append(F.gather_row(idx, eqidx))
+        # #---------------------------------------------------------------orignal part end
+    #--------------------------------------------------------------*-replaced part
+    elif degree.dim() == 1: 
+        if len(degree) > 1: # group degrees bucket
+            for v in degree:
+                eqidx = F.nonzero_1d(F.equal(sorted_val, v))
+                bkt_idx.append(F.gather_row(idx, eqidx))
+                
+        elif F.equal(degree, -1): # all degree bucket
+            for v in unique_val:
+                eqidx = F.nonzero_1d(F.equal(sorted_val, v))
+                bkt_idx.append(F.gather_row(idx, eqidx))
     
-    #--------------------------------------------------------------- 
+    elif degree.dim() == 0:  # single degree; 0-d tensor 
+        if (step==-1) or (num_split==-1): # singe degree bucket
+            v = degree.item()  # current degree
+            eqidx = F.nonzero_1d(F.equal(sorted_val, v)) 
+            bkt_idx.append(F.gather_row(idx, eqidx))
+            unique_val = np.asarray(list([degree.item()]))
+        else: # single degree multiple buckets
+            v = degree.item()
+            eqidx = F.nonzero_1d(F.equal(sorted_val, v)) # local nid of degree equals v
+            tmp = F.gather_row(idx, eqidx)
+            
+            N = math.ceil(len(tmp)/num_split)
+            bkt_idx.append(tmp[step*N:((step+1)*N)]) 
+            print('core.py bucket local nid' ,tmp[step*N:((step+1)*N)])
+            unique_val = np.asarray(list([degree.item()]))
+            print('the length of bkt_idx in core.py _bucketing', len(bkt_idx[0]))
+            
+
     def bucketor(data):
         bkts = [F.gather_row(data, idx) for idx in bkt_idx]
         return bkts
@@ -411,7 +436,8 @@ def invoke_gspmm(
     return {rfunc.out_field: z}
 
 
-def message_passing(g, mfunc, rfunc, afunc):
+# def message_passing(g, mfunc, rfunc, afunc):    # original
+def message_passing(g, mfunc, rfunc, afunc, degree, num_split, step):   # new code
     """Invoke message passing computation on the whole graph.
 
     Parameters
@@ -454,7 +480,8 @@ def message_passing(g, mfunc, rfunc, afunc):
             ndata = invoke_gspmm(g, fn.copy_e(msg, msg), rfunc, edata=msgdata)
         else:
             orig_nid = g.dstdata.get(NID, None)
-            ndata = invoke_udf_reduce(g, rfunc, msgdata, orig_nid=orig_nid)
+            # ndata = invoke_udf_reduce(g, rfunc, msgdata, orig_nid=orig_nid) # original
+            ndata = invoke_udf_reduce(g, rfunc, msgdata, degree,num_split,step, orig_nid=orig_nid) # new
     # apply phase
     if afunc is not None:
         for k, v in g.dstdata.items():  # include original node features
@@ -464,4 +491,6 @@ def message_passing(g, mfunc, rfunc, afunc):
         ndata = invoke_node_udf(
             g, ALL, g.dsttypes[0], afunc, ndata=ndata, orig_nid=orig_nid
         )
-    return ndata
+
+    return ndata 
+    
